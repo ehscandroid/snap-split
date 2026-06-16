@@ -9,7 +9,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses = {
-  primary: 'bg-blue-500 text-white hover:bg-blue-600',
+  primary: 'text-white',
   secondary: 'bg-gray-200 text-gray-700 hover:bg-gray-300',
   danger: 'bg-red-500 text-white hover:bg-red-600',
   success: 'bg-green-500 text-white hover:bg-green-600',
@@ -35,6 +35,10 @@ export const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props
 }) => {
+  const accentStyle = variant === 'primary'
+    ? { backgroundColor: 'var(--accent)', ['--hover-bg' as string]: 'var(--accent-hover)' }
+    : {};
+
   return (
     <button
       disabled={disabled || loading}
@@ -45,6 +49,9 @@ export const Button: React.FC<ButtonProps> = ({
         ${sizeClasses[size]}
         ${className}
       `}
+      style={accentStyle}
+      onMouseEnter={(e) => { if (variant === 'primary') (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent-hover)'; }}
+      onMouseLeave={(e) => { if (variant === 'primary') (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent)'; }}
       {...props}
     >
       {loading ? (

@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { Outlet } from "react-router-dom";
+import { Icon } from "@iconify/react";
+import { Outlet, useLocation } from "react-router-dom";
 import { Panel } from "./Panel";
-import styles from "./Panel.module.css";
 import Table from "../components/Table";
 import { NavItem } from "../components/NavItem";
+import { NavFavorites } from "../components/NavFavorites";
 import { NavItemModal } from "../components/NavItemModal";
 import { DetailHeader } from "../components/PanelHeader";
-import { Button, TextButton, IconButton, SplitButton, DownloadButton, CheckboxButton } from '../components/Button';
+import { SplitButton } from '../components/Button';
 import { FlagIcon } from "../components/FlagIcon";
 
 type PanelConfig = {
@@ -33,10 +34,12 @@ const getStoredWidth = (key: string, defaultValue: number): number => {
   return stored ? parseInt(stored, 10) : defaultValue;
 };
 
+const COLLAPSE_WIDTH = parseInt(import.meta.env.VITE_PANEL_COLLAPSE_WIDTH) || 40;
+
 const panelConfigs: PanelConfig[] = [
-  { initialWidth: 200, minWidth: 40, maxWidth: 500, collapseWidth: 40, closable: true },
-  { initialWidth: 200, minWidth: 60, maxWidth: 900, collapseWidth: 60, gridColumns: 5 },
-  { initialWidth: 900, minWidth: 0, maxWidth: 1500, collapseWidth: 50, showHandle: false, fill: true, footer: <div>Footer content</div> },
+  { initialWidth: 200, minWidth: COLLAPSE_WIDTH, maxWidth: 500, collapseWidth: COLLAPSE_WIDTH, closable: true },
+  { initialWidth: 200, minWidth: COLLAPSE_WIDTH, maxWidth: 900, collapseWidth: COLLAPSE_WIDTH, gridColumns: 5 },
+  { initialWidth: 900, minWidth: 0, maxWidth: 1500, collapseWidth: 50, showHandle: false, fill: true, footer: <></> },
 ];
 
 const Layout: React.FC = () => {
@@ -59,10 +62,6 @@ const Layout: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.rightWidth, rightWidth.toString());
   }, [rightWidth]);
-
-  const leftRows = Array.from({ length: 50 }, (_, i) => `Left item ${i + 1}`);
-  const middleRows = Array.from({ length: 50 }, (_, i) => `Middle item ${i + 1}`);
-  const rightRows = Array.from({ length: 50 }, (_, i) => `Right item ${i + 1}`);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -105,10 +104,13 @@ const Layout: React.FC = () => {
 
   const [navResizer, setNavResizer] = useState(200);
   const [tabResizer, setTabResizer] = useState(200);
+  const [columnsOpen, setColumnsOpen] = useState(false);
   const navSmall = navResizer < 120;
+  const location = useLocation();
+  const isFullView = location.pathname === '/fullview';
 
   return (
-    <div className={styles.layout} ref={layoutRef}>
+    <div className="panel-layout flex h-screen w-screen bg-gray-100 dark:bg-[#111] p-[5px] gap-[5px] pr-5" ref={layoutRef}>
       <Panel
         width={leftWidth}
         minWidth={panelConfigs[0].minWidth}
@@ -118,25 +120,28 @@ const Layout: React.FC = () => {
         closable={panelConfigs[0].closable}
         autoCollapseOnResize={panelConfigs[0].autoCollapseOnResize}
         onToggleCollapse={handleToggleLeftCollapse}
+        header={
+          navSmall
+            ? <Icon icon="mdi:view-split-vertical" className="w-5 h-5 text-gray-400 mx-auto" />
+            : <div className="flex items-center gap-2">
+                <Icon icon="mdi:view-split-vertical" className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                <span className="font-semibold text-gray-800 dark:text-gray-100 tracking-tight truncate">Snap-Split</span>
+              </div>
+        }
         footer={<>
-          <div className="border-t border-gray-700"></div>
-          <NavItemModal icon="line-md:account" label="Profile" navSmall={navSmall} />
-          <NavItemModal icon="line-md:cog" label="Settings" navSmall={navSmall} />
+          <NavItemModal icon="mdi:account-outline" label="Profile" navSmall={navSmall} />
+          <NavItemModal icon="mdi:cog-outline" label="Settings" navSmall={navSmall} />
         </>}
         onResizeStart={() => setResizing(0)}
       >
-        <NavItem icon="line-md:home" label="Home" navSmall={navSmall} active badge={3} />
-        <NavItem icon="line-md:account" label="Form" navSmall={navSmall} to="form" />
-        <NavItem icon="line-md:cog" label="Settings" navSmall={navSmall} />
-        <NavItem icon="line-md:file" label="Files" navSmall={navSmall} badge={12} badgeColor="bg-green-500" />
-        <NavItem icon="line-md:star" label="Favorites" navSmall={navSmall} />
-        <NavItem icon="line-md:account" label="Profile" navSmall={navSmall} />
-        <NavItem icon="line-md:cog" label="Settings" navSmall={navSmall} />
-        <NavItem icon="line-md:cog" label="Chatbot" navSmall={navSmall} to="chatbot" />
-        <NavItem icon="line-md:cog" label="Sections" navSmall={navSmall} to="sections" />
+        <NavItem icon="mdi:home-outline" label="Home" navSmall={navSmall} to="/" />
+        <NavItem icon="mdi:form-select" label="Form" navSmall={navSmall} to="form" />
+        <NavItem icon="mdi:button-cursor" label="Buttons" navSmall={navSmall} to="buttons" />
+        <NavItem icon="mdi:fullscreen" label="Full View" navSmall={navSmall} to="fullview" />
+        <NavFavorites navSmall={navSmall} />
       </Panel>
 
-      <Panel
+      {!isFullView && <Panel
         width={middleWidth}
         minWidth={panelConfigs[1].minWidth}
         maxWidth={panelConfigs[1].maxWidth}
@@ -144,9 +149,23 @@ const Layout: React.FC = () => {
         collapseWidth={panelConfigs[1].collapseWidth}
         gridColumns={panelConfigs[1].gridColumns}
         onResizeStart={() => setResizing(1)}
+        closable
+        noPadding
+        header={
+          <div className="flex items-center gap-2 w-full">
+            <span className="font-semibold text-gray-800 dark:text-gray-100">Items</span>
+            <button
+              onClick={() => setColumnsOpen(true)}
+              className="ml-auto mr-2 flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 transition-colors duration-150"
+            >
+              <Icon icon="mdi:table-column" width={14} height={14} />
+              Columns
+            </button>
+          </div>
+        }
       >
-        <Table tabResizer={tabResizer} />
-      </Panel>
+        <Table tabResizer={tabResizer} columnsOpen={columnsOpen} onColumnsClose={() => setColumnsOpen(false)} />
+      </Panel>}
 
       <Panel
         width={rightWidth}
@@ -156,7 +175,7 @@ const Layout: React.FC = () => {
         fill={panelConfigs[2].fill}
         header={
           <DetailHeader
-            icon="line-md:star"
+            icon="mdi:star-outline"
             title="Form Elements"
             subtitle="Additional information and details about Form Elements and Buttons"
             trailing={<FlagIcon

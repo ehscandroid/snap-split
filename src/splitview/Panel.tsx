@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
-import lineMdMinus from "@iconify-icons/line-md/minus";
-import lineMdPlus from "@iconify-icons/line-md/plus";
-import styles from "./Panel.module.css";
+import './panel-globals.css';
 
 type PanelProps = {
   width?: number;
@@ -19,13 +17,13 @@ type PanelProps = {
   onResizeStart?: () => void;
   showHandle?: boolean;
   fill?: boolean;
+  noTopPadding?: boolean;
+  noPadding?: boolean;
   setResizer?: (width: number) => void;
   children: React.ReactNode;
 };
 
-export const getPanelWidth = (element: HTMLElement): number => {
-  return element.offsetWidth;
-};
+export const getPanelWidth = (element: HTMLElement): number => element.offsetWidth;
 
 export const Panel: React.FC<PanelProps> = ({
   width,
@@ -43,110 +41,108 @@ export const Panel: React.FC<PanelProps> = ({
   onResizeStart,
   showHandle = true,
   fill = undefined,
+  noTopPadding = false,
+  noPadding = false,
   children,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [scrolled, setScrolled] = useState(false);
+  const panelRef  = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled]               = useState(false);
   const [internalCollapsed, setInternalCollapsed] = useState(false);
 
   useEffect(() => {
-    if (panelRef.current && setResizer) {
-      setResizer(getPanelWidth(panelRef.current));
-    }
+    if (panelRef.current && setResizer) setResizer(getPanelWidth(panelRef.current));
   }, [width, setResizer]);
 
-  const isControlled = collapsed !== undefined;
-  const isBelowCollapseWidth = collapseWidth !== undefined && width !== undefined && width <= collapseWidth;
-  const shouldAutoCollapse = autoCollapseOnResize && isBelowCollapseWidth;
-  
-  let effectiveCollapsed: boolean;
-  if (isControlled) {
-    effectiveCollapsed = collapsed || shouldAutoCollapse;
-  } else {
-    effectiveCollapsed = internalCollapsed || isBelowCollapseWidth;
-  }
+  useEffect(() => {
+    if (!panelRef.current || !setResizer) return;
+    const el = panelRef.current;
+    const raf = requestAnimationFrame(() => setResizer(getPanelWidth(el)));
+    return () => cancelAnimationFrame(raf);
+  }, [internalCollapsed, setResizer]);
 
-  const currentColumns = React.useMemo(() => {
-    if (!gridColumns || !width || !maxWidth) return undefined;
-    const colWidth = maxWidth / gridColumns;
-    const visibleCols = Math.max(1, Math.floor(width / colWidth));
-    console.log(visibleCols)
-    return visibleCols;
-  }, [gridColumns, width, maxWidth]);
+  const isControlled        = collapsed !== undefined;
+  const isBelowCollapseWidth = collapseWidth !== undefined && width !== undefined && width <= collapseWidth;
+  const shouldAutoCollapse  = autoCollapseOnResize && isBelowCollapseWidth;
+
+  const effectiveCollapsed = isControlled
+    ? (collapsed || shouldAutoCollapse)
+    : (internalCollapsed || isBelowCollapseWidth);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-
-    const onScroll = () => {
-      setScrolled(el.scrollTop > 0);
-    };
-
+    const onScroll = () => setScrolled(el.scrollTop > 0);
     el.addEventListener("scroll", onScroll);
     onScroll();
-
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
   const handleToggle = () => {
-    if (isControlled) {
-      onToggleCollapse?.();
-    } else {
-      setInternalCollapsed(!internalCollapsed);
-    }
+    if (isControlled) onToggleCollapse?.();
+    else setInternalCollapsed(!internalCollapsed);
   };
+
+  const contentPadding = effectiveCollapsed
+    ? 'p-0'
+    : noPadding
+      ? 'p-0'
+      : noTopPadding
+        ? 'px-4 pb-4'
+        : 'p-4';
 
   return (
     <div
       ref={panelRef}
-      className={`${styles.panel} ${fill ? styles.panelFill : ""} ${effectiveCollapsed ? styles.panelCollapsed : ""}`}
+      className={`panel-item flex flex-col overflow-hidden relative rounded-xl shadow-sm my-4 ml-4
+        ${effectiveCollapsed ? 'bg-gray-50 dark:bg-[#2a2a2a]' : 'bg-white dark:bg-[#1e1e1e]'}
+        ${fill ? 'flex-1' : ''}
+        text-gray-800 dark:text-gray-100`}
       style={{ width: effectiveCollapsed ? collapseWidth : width, minWidth, maxWidth }}
     >
+      {/* Header */}
       <div
-        className={`${styles.panelInsideHeader} ${effectiveCollapsed ? styles.panelInsideContentCollapsed : ""}`}
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 2,
-            boxShadow: scrolled ? "0 2px 10px rgba(0,0,0,0.1)" : "none",
-            transition: "box-shadow 0.2s ease",
-          }}
+        className={`flex items-center w-full px-4 min-h-[50px] bg-white dark:bg-[#1f1f1f] sticky top-0 z-[2] transition-shadow duration-200
+          ${effectiveCollapsed ? 'justify-center px-0' : ''}`}
+        style={{ boxShadow: scrolled ? "0 2px 10px rgba(0,0,0,0.1)" : "none" }}
       >
         {effectiveCollapsed && closable ? (
-          <button onClick={handleToggle} style={{ margin: "0 auto", cursor: "pointer", background: "none", border: "none", display: "flex" }}>
-            <Icon icon={lineMdPlus} />
+          <button onClick={handleToggle} className="flex items-center justify-center w-5 h-5 cursor-pointer bg-transparent border-none text-gray-500 dark:text-gray-400">
+            <Icon icon="mdi:plus" width={16} height={16} />
           </button>
         ) : (
           <>
-            {header || ` <span>Header</span>`}
+            {header}
             {closable && (
-              <button onClick={handleToggle} style={{ marginLeft: "auto", cursor: "pointer", background: "none", border: "none", display: "flex" }}>
-                <Icon icon={lineMdMinus} />
+              <button onClick={handleToggle} className="ml-auto flex items-center justify-center w-5 h-5 cursor-pointer bg-transparent border-none text-gray-500 dark:text-gray-400">
+                <Icon icon="mdi:minus" width={16} height={16} />
               </button>
             )}
           </>
         )}
       </div>
 
+      {/* Content */}
+      <div
+        ref={scrollRef}
+        className={`panel-scroll flex flex-col gap-1 w-full overflow-auto ${footer ? 'flex-1 min-h-0' : 'flex-1'} ${contentPadding}`}
+      >
+        {children}
+      </div>
 
-        <>
-          <div
-            ref={scrollRef}
-            className={`${styles.panelInsideContent} ${effectiveCollapsed ? styles.panelInsideContentCollapsed : ""}`}
-            style={{
-              overflow: "auto",
-              flex: footer ? "1" : undefined,
-              minHeight: footer ? "0" : undefined,
-            }}
-          >
-            {children}
-          </div>
-          {footer && <div className={`${styles.panelInsideFooter} ${effectiveCollapsed ? styles.panelInsideContentCollapsed : ""}`}>{footer}</div>}
-        </>
+      {/* Footer */}
+      {footer && !effectiveCollapsed && (
+        <div className="flex-shrink-0 min-h-[24px] bg-white dark:bg-[#1e1e1e]">
+          {footer}
+        </div>
+      )}
 
+      {/* Resize handle */}
       {showHandle && (
-        <div className={styles.handle} onMouseDown={onResizeStart} />
+        <div
+          className="panel-handle flex-shrink-0 w-1.5 min-w-[6px] h-[200px] cursor-col-resize bg-transparent hover:bg-gray-400 dark:hover:bg-gray-600 rounded absolute right-0.5 top-1/2 -translate-y-1/2 transition-colors"
+          onMouseDown={onResizeStart}
+        />
       )}
     </div>
   );

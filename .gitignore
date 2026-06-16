@@ -10,6 +10,8 @@ vite.config.js
 vite.config.js
 
 node_modules
+dist
+package-lock.json
 *.local
 _archive
 

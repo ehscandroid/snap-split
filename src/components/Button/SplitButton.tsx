@@ -18,7 +18,7 @@ interface SplitButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses = {
-  primary: 'bg-blue-500 text-white hover:bg-blue-600',
+  primary: 'text-white',
   secondary: 'bg-gray-200 text-gray-700 hover:bg-gray-300',
   danger: 'bg-red-500 text-white hover:bg-red-600',
   success: 'bg-green-500 text-white hover:bg-green-600',
@@ -78,6 +78,9 @@ export const SplitButton: React.FC<SplitButtonProps> = ({
           ${variantClasses[variant]}
           ${sizeClasses[size]}
         `}
+        style={variant === 'primary' ? { backgroundColor: 'var(--accent)' } : {}}
+        onMouseEnter={(e) => { if (variant === 'primary') e.currentTarget.style.backgroundColor = 'var(--accent-hover)'; }}
+        onMouseLeave={(e) => { if (variant === 'primary') e.currentTarget.style.backgroundColor = 'var(--accent)'; }}
         {...props}
       >
         {loading ? (
@@ -97,6 +100,9 @@ export const SplitButton: React.FC<SplitButtonProps> = ({
             ${dropdownSizeClasses[size]}
             active:translate-y-px
           `}
+          style={variant === 'primary' ? { backgroundColor: 'var(--accent)' } : {}}
+          onMouseEnter={(e) => { if (variant === 'primary') e.currentTarget.style.backgroundColor = 'var(--accent-hover)'; }}
+          onMouseLeave={(e) => { if (variant === 'primary') e.currentTarget.style.backgroundColor = 'var(--accent)'; }}
         >
           <span className={`transition-transform duration-150 inline-block ${isOpen ? 'rotate-180' : ''}`}>
             ▼
