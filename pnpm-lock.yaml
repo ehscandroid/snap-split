@@ -23,6 +23,9 @@ importers:
       flag-icons:
         specifier: ^7.5.0
         version: 7.5.0
+      mgsmu-react:
+        specifier: ^1.0.5
+        version: 1.0.5(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -32,6 +35,9 @@ importers:
       react-router-dom:
         specifier: ^6.27.0
         version: 6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react-swipeable:
+        specifier: ^7.0.2
+        version: 7.0.2(react@18.3.1)
     devDependencies:
       '@eslint/js':
         specifier: ^9.14.0
@@ -1426,6 +1432,11 @@ packages:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
 
+  mgsmu-react@1.0.5:
+    resolution: {integrity: sha512-2jBTPIbfgthE308VXKxVLBNYNIk+swvLN6wa57P3E3osfc3tXUaHXl6uOOxoh1ijfFdQVMVe0878YxcF5MrE6A==}
+    peerDependencies:
+      react: ^18.3.1
+
   minimatch@10.2.4:
     resolution: {integrity: sha512-oRjTw/97aTBN0RHbYCdtF1MQfvusSIBQM0IZEgzl6426+8jSC0nF1a/GmnVLpfB9yyr6g6FTqWqiZVbxrtaCIg==}
     engines: {node: 18 || 20 || >=22}
@@ -1584,6 +1595,11 @@ packages:
     engines: {node: '>=14.0.0'}
     peerDependencies:
       react: '>=16.8'
+
+  react-swipeable@7.0.2:
+    resolution: {integrity: sha512-v1Qx1l+aC2fdxKa9aKJiaU/ZxmJ5o98RMoFwUqAAzVWUcxgfHFXDDruCKXhw6zIYXm6V64JiHgP9f6mlME5l8w==}
+    peerDependencies:
+      react: ^16.8.3 || ^17 || ^18 || ^19.0.0 || ^19.0.0-rc
 
   react@18.3.1:
     resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
@@ -3254,6 +3270,10 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
+  mgsmu-react@1.0.5(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+
   minimatch@10.2.4:
     dependencies:
       brace-expansion: 5.0.5
@@ -3417,6 +3437,10 @@ snapshots:
   react-router@6.30.3(react@18.3.1):
     dependencies:
       '@remix-run/router': 1.23.2
+      react: 18.3.1
+
+  react-swipeable@7.0.2(react@18.3.1):
+    dependencies:
       react: 18.3.1
 
   react@18.3.1:

@@ -94,33 +94,36 @@ export const Panel: React.FC<PanelProps> = ({
   return (
     <div
       ref={panelRef}
-      className={`panel-item flex flex-col overflow-hidden relative rounded-xl shadow-sm my-4 ml-4
+      className={`panel-item flex flex-col overflow-hidden relative rounded-2xl border border-[#eef1f5] dark:border-white/10
+        shadow-[0_1px_2px_rgba(15,23,42,0.04),0_16px_32px_-22px_rgba(15,23,42,0.16)]
         ${effectiveCollapsed ? 'bg-gray-50 dark:bg-[#2a2a2a]' : 'bg-white dark:bg-[#1e1e1e]'}
         ${fill ? 'flex-1' : ''}
         text-gray-800 dark:text-gray-100`}
       style={{ width: effectiveCollapsed ? collapseWidth : width, minWidth, maxWidth }}
     >
       {/* Header */}
-      <div
-        className={`flex items-center w-full px-4 min-h-[50px] bg-white dark:bg-[#1f1f1f] sticky top-0 z-[2] transition-shadow duration-200
-          ${effectiveCollapsed ? 'justify-center px-0' : ''}`}
-        style={{ boxShadow: scrolled ? "0 2px 10px rgba(0,0,0,0.1)" : "none" }}
-      >
-        {effectiveCollapsed && closable ? (
-          <button onClick={handleToggle} className="flex items-center justify-center w-5 h-5 cursor-pointer bg-transparent border-none text-gray-500 dark:text-gray-400">
-            <Icon icon="mdi:plus" width={16} height={16} />
-          </button>
-        ) : (
-          <>
-            {header}
-            {closable && (
-              <button onClick={handleToggle} className="ml-auto flex items-center justify-center w-5 h-5 cursor-pointer bg-transparent border-none text-gray-500 dark:text-gray-400">
-                <Icon icon="mdi:minus" width={16} height={16} />
-              </button>
-            )}
-          </>
-        )}
-      </div>
+      {(header !== undefined || closable) && (
+        <div
+          className={`flex items-center w-full px-5 min-h-[58px] bg-white dark:bg-[#1f1f1f] sticky top-0 z-[2] transition-shadow duration-200
+            ${effectiveCollapsed ? 'justify-center px-0' : ''}`}
+          style={{ boxShadow: scrolled ? "0 2px 10px rgba(0,0,0,0.1)" : "none" }}
+        >
+          {effectiveCollapsed && closable ? (
+            <button onClick={handleToggle} className="flex items-center justify-center w-5 h-5 cursor-pointer bg-transparent border-none text-gray-500 dark:text-gray-400">
+              <Icon icon="mdi:plus" width={16} height={16} />
+            </button>
+          ) : (
+            <>
+              {header}
+              {closable && (
+                <button onClick={handleToggle} className="ml-auto flex items-center justify-center w-5 h-5 cursor-pointer bg-transparent border-none text-gray-500 dark:text-gray-400">
+                  <Icon icon="mdi:minus" width={16} height={16} />
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Content */}
       <div
@@ -131,8 +134,8 @@ export const Panel: React.FC<PanelProps> = ({
       </div>
 
       {/* Footer */}
-      {footer && !effectiveCollapsed && (
-        <div className="flex-shrink-0 min-h-[24px] bg-white dark:bg-[#1e1e1e]">
+      {footer && (
+        <div className="flex-shrink-0 bg-white dark:bg-[#1e1e1e] px-[14px] pt-[10px] pb-2">
           {footer}
         </div>
       )}

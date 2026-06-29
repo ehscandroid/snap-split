@@ -1,14 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 import { Panel } from "./Panel";
 import Table from "../components/Table";
+import SdsTable from "../components/SdsTable";
+import SdsEditModal from "../components/SdsEditModal";
 import { NavItem } from "../components/NavItem";
 import { NavFavorites } from "../components/NavFavorites";
 import { NavItemModal } from "../components/NavItemModal";
 import { DetailHeader } from "../components/PanelHeader";
 import { SplitButton } from '../components/Button';
 import { FlagIcon } from "../components/FlagIcon";
+import ToastSimple from "../components/ToastSimple";
+import { useStateStore } from 'mgsmu-react'
 
 type PanelConfig = {
   initialWidth: number;
@@ -35,14 +39,18 @@ const getStoredWidth = (key: string, defaultValue: number): number => {
 };
 
 const COLLAPSE_WIDTH = parseInt(import.meta.env.VITE_PANEL_COLLAPSE_WIDTH) || 40;
+const LEFT_MAX   = parseInt(import.meta.env.VITE_PANEL_LEFT_MAX_WIDTH)   || 500;
+const MIDDLE_MAX = parseInt(import.meta.env.VITE_PANEL_MIDDLE_MAX_WIDTH) || 900;
+const RIGHT_MAX  = parseInt(import.meta.env.VITE_PANEL_RIGHT_MAX_WIDTH)  || 1500;
 
 const panelConfigs: PanelConfig[] = [
-  { initialWidth: 200, minWidth: COLLAPSE_WIDTH, maxWidth: 500, collapseWidth: COLLAPSE_WIDTH, closable: true },
-  { initialWidth: 200, minWidth: COLLAPSE_WIDTH, maxWidth: 900, collapseWidth: COLLAPSE_WIDTH, gridColumns: 5 },
-  { initialWidth: 900, minWidth: 0, maxWidth: 1500, collapseWidth: 50, showHandle: false, fill: true, footer: <></> },
+  { initialWidth: 200, minWidth: COLLAPSE_WIDTH, maxWidth: LEFT_MAX,   collapseWidth: COLLAPSE_WIDTH, closable: true },
+  { initialWidth: 200, minWidth: COLLAPSE_WIDTH, maxWidth: MIDDLE_MAX, collapseWidth: COLLAPSE_WIDTH, gridColumns: 5 },
+  { initialWidth: 900, minWidth: 0,              maxWidth: RIGHT_MAX,  collapseWidth: 50, showHandle: false, fill: true, footer: <></> },
 ];
 
 const Layout: React.FC = () => {
+  const [_, toastClick] = useStateStore('toastEdit');
   const [resizing, setResizing] = useState<number | null>(null);
   const layoutRef = useRef<HTMLDivElement>(null);
 
@@ -105,12 +113,29 @@ const Layout: React.FC = () => {
   const [navResizer, setNavResizer] = useState(200);
   const [tabResizer, setTabResizer] = useState(200);
   const [columnsOpen, setColumnsOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersTab, setFiltersTab] = useState(0);
+  const [sdsSelected, setSdsSelected] = useState(0);
+  const [editOpen, setEditOpen] = useState(false);
+  const [sdsSearch, setSdsSearch] = useState('');
+  const [sdsTags, setSdsTags] = useState<string[]>([]);
+
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const pkg = searchParams.get('package')
+    if (pkg) setSdsTags([pkg])
+  }, [])
+
+  const openFilters = (tab: number) => { setFiltersTab(tab); setFiltersOpen(true) }
   const navSmall = navResizer < 120;
   const location = useLocation();
   const isFullView = location.pathname === '/fullview';
+  const isSds = location.pathname === '/sds';
+  const isTenants = location.pathname === '/tenants';
 
   return (
-    <div className="panel-layout flex h-screen w-screen bg-gray-100 dark:bg-[#111] p-[5px] gap-[5px] pr-5" ref={layoutRef}>
+    <div className="panel-layout flex h-screen w-screen bg-[#eaedf1] dark:bg-[#111] p-4 gap-4" ref={layoutRef}>
       <Panel
         width={leftWidth}
         minWidth={panelConfigs[0].minWidth}
@@ -125,7 +150,11 @@ const Layout: React.FC = () => {
             ? <Icon icon="mdi:view-split-vertical" className="w-5 h-5 text-gray-400 mx-auto" />
             : <div className="flex items-center gap-2">
                 <Icon icon="mdi:view-split-vertical" className="w-5 h-5 text-blue-500 flex-shrink-0" />
-                <span className="font-semibold text-gray-800 dark:text-gray-100 tracking-tight truncate">Snap-Split</span>
+                <span className="text-[16px] font-bold text-[#0f172a] dark:text-gray-100 tracking-[-0.01em] truncate">Snap-Split</span>
+                <button onClick={() => toastClick({open: true})} className="ml-auto mr-2 flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 transition-colors duration-150">
+                  <Icon icon="mdi:bell" width={14} height={14} />
+                  Toast
+                </button>
               </div>
         }
         footer={<>
@@ -137,11 +166,13 @@ const Layout: React.FC = () => {
         <NavItem icon="mdi:home-outline" label="Home" navSmall={navSmall} to="/" />
         <NavItem icon="mdi:form-select" label="Form" navSmall={navSmall} to="form" />
         <NavItem icon="mdi:button-cursor" label="Buttons" navSmall={navSmall} to="buttons" />
+        <NavItem icon="mdi:file-document-outline" label="SDS" navSmall={navSmall} to="sds" />
+        <NavItem icon="mdi:domain" label="Tenants" navSmall={navSmall} to="tenants" />
         <NavItem icon="mdi:fullscreen" label="Full View" navSmall={navSmall} to="fullview" />
         <NavFavorites navSmall={navSmall} />
       </Panel>
 
-      {!isFullView && <Panel
+      {!isFullView && !isTenants && <Panel
         width={middleWidth}
         minWidth={panelConfigs[1].minWidth}
         maxWidth={panelConfigs[1].maxWidth}
@@ -152,28 +183,77 @@ const Layout: React.FC = () => {
         closable
         noPadding
         header={
-          <div className="flex items-center gap-2 w-full">
-            <span className="font-semibold text-gray-800 dark:text-gray-100">Items</span>
-            <button
-              onClick={() => setColumnsOpen(true)}
-              className="ml-auto mr-2 flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 transition-colors duration-150"
-            >
-              <Icon icon="mdi:table-column" width={14} height={14} />
-              Columns
-            </button>
-          </div>
+          isSds ? (
+            <div className="flex items-center gap-2 w-full mr-2">
+              <div className="flex-1 flex items-center flex-wrap gap-1.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 focus-within:border-gray-300 dark:focus-within:border-white/20 transition-colors">
+                {/* <svg className="w-4 h-4 text-gray-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeLinecap="round" />
+                </svg> */}
+                {sdsTags.map((tag) => (
+                  <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-white dark:bg-white/10 border border-gray-200 dark:border-white/15 text-gray-600 dark:text-gray-300 shadow-sm">
+                    {tag}
+                    <button onClick={() => setSdsTags((prev) => prev.filter((t) => t !== tag))} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" /></svg>
+                    </button>
+                  </span>
+                ))}
+                <input
+                  type="text"
+                  placeholder="Search SDS"
+                  value={sdsSearch}
+                  onChange={(e) => setSdsSearch(e.target.value)}
+                  className="flex-1 min-w-[60px] bg-transparent text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
+                />
+                {sdsSearch && (
+                  <svg className="w-4 h-4 text-gray-400 cursor-pointer hover:text-gray-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" onClick={() => setSdsSearch('')}>
+                    <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+                  </svg>
+                )}
+                <button onClick={() => openFilters(0)} className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                  <Icon icon="mdi:tune-variant" width={16} height={16} />
+                </button>
+              </div>
+              {sdsSelected > 0 && (
+                <button onClick={() => setEditOpen(true)} className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-white transition-colors" style={{ backgroundColor: 'var(--accent)' }}>
+                  <Icon icon="mdi:pencil-outline" width={14} height={14} />
+                  Edit ({sdsSelected})
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 w-full">
+              <span className="text-[17px] font-bold text-[#0f172a] dark:text-gray-100 tracking-[-0.01em]">Items</span>
+              <button
+                onClick={() => setColumnsOpen(true)}
+                className="ml-auto mr-2 flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 transition-colors duration-150"
+              >
+                <Icon icon="mdi:table-column" width={14} height={14} />
+                Columns
+              </button>
+            </div>
+          )
         }
       >
-        <Table tabResizer={tabResizer} columnsOpen={columnsOpen} onColumnsClose={() => setColumnsOpen(false)} />
+        {isSds
+          ? <SdsTable tabResizer={tabResizer} searchTerm={sdsSearch} filtersOpen={filtersOpen} filtersTab={filtersTab} onFiltersClose={() => setFiltersOpen(false)} onSelectionChange={setSdsSelected} />
+          : <Table tabResizer={tabResizer} columnsOpen={columnsOpen} onColumnsClose={() => setColumnsOpen(false)} />
+        }
       </Panel>}
 
-      <Panel
+      {isTenants && (
+        <Panel fill noPadding showHandle={false}>
+          <Outlet />
+        </Panel>
+      )}
+
+      {!isTenants && <Panel
         width={rightWidth}
         minWidth={panelConfigs[2].minWidth}
         collapseWidth={panelConfigs[2].collapseWidth}
         showHandle={panelConfigs[2].showHandle}
         fill={panelConfigs[2].fill}
-        header={
+        noPadding={isSds}
+        header={isSds ? undefined :
           <DetailHeader
             icon="mdi:star-outline"
             title="Form Elements"
@@ -219,7 +299,15 @@ const Layout: React.FC = () => {
         onResizeStart={() => setResizing(2)}
       >
         <Outlet />
-      </Panel>
+      </Panel>}
+      <SdsEditModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        selectedCount={sdsSelected}
+        onDelete={() => { console.log('delete', sdsSelected); setEditOpen(false) }}
+        onDownload={() => { console.log('download', sdsSelected); setEditOpen(false) }}
+      />
+      <ToastSimple />
     </div>
   );
 };
