@@ -114,6 +114,7 @@ const Layout: React.FC = () => {
 
   const [navResizer, setNavResizer] = useState(200);
   const [tabResizer, setTabResizer] = useState(200);
+  const [detailResizer, setDetailResizer] = useState(900);
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filtersTab, setFiltersTab] = useState(0);
@@ -259,6 +260,7 @@ const Layout: React.FC = () => {
         showHandle={panelConfigs[2].showHandle}
         fill={panelConfigs[2].fill}
         noPadding={isSds}
+        setResizer={setDetailResizer}
         header={isSds ? undefined :
           <DetailHeader
             icon="mdi:star-outline"
@@ -304,7 +306,7 @@ const Layout: React.FC = () => {
         footer={panelConfigs[2].footer}
         onResizeStart={() => setResizing(2)}
       >
-        <Outlet />
+        <Outlet context={{ detailWidth: detailResizer }} />
       </Panel>}
       <SdsEditModal
         open={editOpen}

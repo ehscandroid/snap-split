@@ -51,15 +51,13 @@ export const Panel: React.FC<PanelProps> = ({
   const [internalCollapsed, setInternalCollapsed] = useState(false);
 
   useEffect(() => {
-    if (panelRef.current && setResizer) setResizer(getPanelWidth(panelRef.current));
-  }, [width, setResizer]);
-
-  useEffect(() => {
     if (!panelRef.current || !setResizer) return;
     const el = panelRef.current;
-    const raf = requestAnimationFrame(() => setResizer(getPanelWidth(el)));
-    return () => cancelAnimationFrame(raf);
-  }, [internalCollapsed, setResizer]);
+    setResizer(getPanelWidth(el));
+    const observer = new ResizeObserver(() => setResizer(getPanelWidth(el)));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [setResizer]);
 
   const isControlled        = collapsed !== undefined;
   const isBelowCollapseWidth = collapseWidth !== undefined && width !== undefined && width <= collapseWidth;
