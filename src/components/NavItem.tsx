@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 
 interface NavItemProps {
   icon: string;
+  iconNode?: React.ReactNode;
   label: string;
   to?: string;
   navSmall?: boolean;
@@ -15,6 +16,7 @@ interface NavItemProps {
 
 export const NavItem: React.FC<NavItemProps> = ({
   icon,
+  iconNode,
   label,
   to,
   navSmall = false,
@@ -27,10 +29,10 @@ export const NavItem: React.FC<NavItemProps> = ({
   const isActive = active || (to ? location.pathname === to || location.pathname === `/${to}` : false);
 
   const className = `
-    flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-all duration-150 cursor-pointer text-left
-    hover:bg-gray-100 hover:text-gray-800
+    flex items-center gap-3 px-[11px] py-[9px] rounded-[10px] transition-all duration-150 cursor-pointer text-left
+    hover:bg-[#f5f7fa] hover:text-[#1e293b]
     dark:hover:bg-white/5 dark:hover:text-gray-200
-    ${isActive ? '' : 'text-gray-500 dark:text-gray-400'}
+    ${isActive ? '' : 'text-[#475569] dark:text-gray-400'}
     ${navSmall ? "justify-center w-full" : "w-full"}
   `;
 
@@ -40,7 +42,7 @@ export const NavItem: React.FC<NavItemProps> = ({
 
   const iconEl = (
     <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center">
-      <Icon icon={icon} width={16} height={16} />
+      {iconNode ?? <Icon icon={icon} width={18} height={18} />}
     </span>
   );
 
@@ -59,7 +61,7 @@ export const NavItem: React.FC<NavItemProps> = ({
   ) : (
     <>
       {iconEl}
-      <span className="flex-1 truncate text-[13px] font-medium">{label}</span>
+      <span className={`flex-1 truncate text-[14px] ${isActive ? 'font-semibold' : 'font-medium'}`}>{label}</span>
       {badge !== undefined && (
         <span
           className={`ml-auto px-2 py-0.5 text-xs rounded-full font-medium ${isActive ? '' : `${badgeColor} text-gray-600 dark:text-gray-300`}`}

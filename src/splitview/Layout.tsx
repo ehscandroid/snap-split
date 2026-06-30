@@ -8,6 +8,8 @@ import SdsEditModal from "../components/SdsEditModal";
 import { NavItem } from "../components/NavItem";
 import { NavFavorites } from "../components/NavFavorites";
 import { NavItemModal } from "../components/NavItemModal";
+import { PackageIcon } from "../components/icons/PackageIcon";
+import { SdsIcon } from "../components/icons/SdsIcon";
 import { DetailHeader } from "../components/PanelHeader";
 import { SplitButton } from '../components/Button';
 import { FlagIcon } from "../components/FlagIcon";
@@ -133,6 +135,8 @@ const Layout: React.FC = () => {
   const isFullView = location.pathname === '/fullview';
   const isSds = location.pathname === '/sds';
   const isTenants = location.pathname === '/tenants';
+  const isStatuses = location.pathname === '/statuses';
+  const isPackages = location.pathname === '/packages';
 
   return (
     <div className="panel-layout flex h-screen w-screen bg-[#eaedf1] dark:bg-[#111] p-4 gap-4" ref={layoutRef}>
@@ -166,13 +170,15 @@ const Layout: React.FC = () => {
         <NavItem icon="mdi:home-outline" label="Home" navSmall={navSmall} to="/" />
         <NavItem icon="mdi:form-select" label="Form" navSmall={navSmall} to="form" />
         <NavItem icon="mdi:button-cursor" label="Buttons" navSmall={navSmall} to="buttons" />
-        <NavItem icon="mdi:file-document-outline" label="SDS" navSmall={navSmall} to="sds" />
+        <NavItem icon="mdi:file-document-outline" iconNode={<SdsIcon className="w-[18px] h-[18px]" />} label="SDS" navSmall={navSmall} to="sds" />
         <NavItem icon="mdi:domain" label="Tenants" navSmall={navSmall} to="tenants" />
+        <NavItem icon="mdi:list-status" label="Statuses" navSmall={navSmall} to="statuses" />
+        <NavItem icon="mdi:package-variant-closed" iconNode={<PackageIcon className="w-[18px] h-[18px]" />} label="Packages" navSmall={navSmall} to="packages" />
         <NavItem icon="mdi:fullscreen" label="Full View" navSmall={navSmall} to="fullview" />
         <NavFavorites navSmall={navSmall} />
       </Panel>
 
-      {!isFullView && !isTenants && <Panel
+      {!isFullView && !isTenants && !isStatuses && !isPackages && <Panel
         width={middleWidth}
         minWidth={panelConfigs[1].minWidth}
         maxWidth={panelConfigs[1].maxWidth}
@@ -240,13 +246,13 @@ const Layout: React.FC = () => {
         }
       </Panel>}
 
-      {isTenants && (
+      {(isTenants || isStatuses || isPackages) && (
         <Panel fill noPadding showHandle={false}>
           <Outlet />
         </Panel>
       )}
 
-      {!isTenants && <Panel
+      {!isTenants && !isStatuses && !isPackages && <Panel
         width={rightWidth}
         minWidth={panelConfigs[2].minWidth}
         collapseWidth={panelConfigs[2].collapseWidth}

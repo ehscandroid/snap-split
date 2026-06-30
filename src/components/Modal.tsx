@@ -7,6 +7,7 @@ interface ModalProps {
   title: string
   subtitle?: string
   icon?: string
+  iconNode?: React.ReactNode
   maxWidth?: string
   children: React.ReactNode
 }
@@ -17,6 +18,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   subtitle,
   icon,
+  iconNode,
   maxWidth = 'max-w-md',
   children,
 }) => {
@@ -33,9 +35,9 @@ export const Modal: React.FC<ModalProps> = ({
       >
         {/* Header */}
         <div className="flex items-center gap-4 px-6 py-5">
-          {icon && (
-            <div className="w-10 h-10 rounded-xl bg-[#f1f4f8] dark:bg-white/5 flex items-center justify-center flex-shrink-0">
-              <Icon icon={icon} width={20} height={20} className="text-[#475569] dark:text-gray-400" />
+          {(iconNode || icon) && (
+            <div className="w-14 h-14 rounded-xl bg-[#f1f4f8] dark:bg-white/5 flex items-center justify-center flex-shrink-0">
+              {iconNode ?? <Icon icon={icon!} width={28} height={28} className="text-[#475569] dark:text-gray-400" />}
             </div>
           )}
           <div className="flex-1 min-w-0">

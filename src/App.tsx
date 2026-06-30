@@ -5,6 +5,8 @@ import Form from './pages/Form';
 import Buttons from './pages/Buttons';
 import Sds from './pages/Sds';
 import Tenants from './pages/Tenants';
+import Statuses from './pages/Statuses';
+import Packages from './pages/Packages';
 
 const App: React.FC = () => {
   return (
@@ -17,6 +19,8 @@ const App: React.FC = () => {
           <Route path="buttons" element={<Buttons />} />
           <Route path="sds" element={<Sds />} />
           <Route path="tenants" element={<Tenants />} />
+          <Route path="statuses" element={<Statuses />} />
+          <Route path="packages" element={<Packages />} />
           <Route path="fullview" element={<div className="p-4 text-gray-400">Full view page</div>} />
           <Route path="*" element={<div className="p-4 text-gray-400">Page not found</div>} />
         </Route>
