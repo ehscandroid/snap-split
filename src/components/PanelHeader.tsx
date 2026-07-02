@@ -172,17 +172,18 @@ export const DetailHeader: React.FC<DetailHeaderProps> = ({
     <div className={`flex flex-col gap-3 ${className} p-2 w-full`}>
       <div className="flex items-center gap-4 w-full">
         {icon && (
-          <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
-            <Icon icon={icon} className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(160deg,#fef9ec,#fdf0d0)', border: '1px solid #f6e7bd' }}>
+            <Icon icon={icon} className="w-5 h-5" style={{ color: '#f5b13d' } as React.CSSProperties} />
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          <div className="flex items-center gap-[10px] flex-wrap">
+            <h1 className="text-[21px] font-bold text-[#0f172a] dark:text-gray-100 tracking-[-0.02em]">
               {title}
             </h1>
             {tag && (
-              <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${tagColor}`}>
+              <span className="text-[11.5px] font-semibold text-[#64748b] bg-[#f1f4f8] border border-[#e6eaf0] px-[9px] py-[3px] rounded-[7px]">
                 {tag}
               </span>
             )}
@@ -193,7 +194,7 @@ export const DetailHeader: React.FC<DetailHeaderProps> = ({
             )}
           </div>
           {subtitle && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-[14px] leading-[1.55] text-[#64748b] dark:text-gray-400 mt-[7px]">
               {subtitle}
             </p>
           )}

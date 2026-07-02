@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Modal } from './Modal';
 
 interface Todo {
   id: number;
@@ -183,52 +184,51 @@ const Table: React.FC<TableProps> = ({ search = true, tabResizer = 400, columnsO
       )}
 
       {/* Columns modal */}
-      {columnsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onColumnsClose}>
-          <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">Columns</h2>
-              <button onClick={onColumnsClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" /></svg>
+      <Modal
+        open={!!columnsOpen}
+        onClose={onColumnsClose!}
+        title="Columns"
+        subtitle="Show or hide table columns."
+        icon="mdi:table-column"
+        maxWidth="max-w-sm"
+      >
+        <div className="flex flex-col px-6 pb-6 gap-1">
+          {colDefs.map((col) => {
+            const isActive = userCols.includes(col.key)
+            return (
+              <button
+                key={col.key}
+                onClick={() => toggleUserCol(col.key)}
+                className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-[#f5f7fa] dark:hover:bg-white/5 transition-colors"
+              >
+                <span className="text-[14px] text-[#334155] dark:text-gray-300">{col.label}</span>
+                <div
+                  className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isActive ? '' : 'border-gray-300 dark:border-gray-600'}`}
+                  style={isActive ? { backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' } : {}}
+                >
+                  {isActive && <svg viewBox="0 0 24 24" className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                </div>
               </button>
-            </div>
-            <div className="flex flex-col gap-1">
-              {colDefs.map((col) => {
-                const isActive = userCols.includes(col.key)
-                return (
-                  <button key={col.key} onClick={() => toggleUserCol(col.key)} className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{col.label}</span>
-                    <div
-                      className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isActive ? '' : 'border-gray-300 dark:border-gray-600'}`}
-                      style={isActive ? { backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' } : {}}
-                    >
-                      {isActive && <svg viewBox="0 0 24 24" className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+            )
+          })}
         </div>
-      )}
+      </Modal>
 
       {/* Filters modal */}
-      {advancedOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setAdvancedOpen(false)}>
-          <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-xl p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">Filters</h2>
-              <button onClick={() => setAdvancedOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" /></svg>
-              </button>
-            </div>
-            <p className="text-sm text-gray-400 dark:text-gray-500">Content TBD</p>
-          </div>
+      <Modal
+        open={advancedOpen}
+        onClose={() => setAdvancedOpen(false)}
+        title="Filters"
+        subtitle="Narrow down the table rows."
+        icon="mdi:filter-outline"
+      >
+        <div className="px-6 pb-6">
+          <p className="text-[14px] text-[#64748b] dark:text-gray-500">Content TBD</p>
         </div>
-      )}
+      </Modal>
 
       {/* Table */}
-      <div className="flex-1 min-h-0 overflow-auto px-4">
+      <div className={`flex-1 min-h-0 overflow-auto ${mode === 'collapsed' ? 'px-0 overflow-x-hidden' : 'px-4'}`}>
         <table className="w-full border-collapse">
           {mode !== 'collapsed' && (
             <thead>
@@ -280,9 +280,9 @@ const Table: React.FC<TableProps> = ({ search = true, tabResizer = 400, columnsO
                     className={`border-b border-gray-100 dark:border-white/5 transition-colors duration-100 ${isSelected ? '' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
                     style={isSelected ? { backgroundColor: 'color-mix(in srgb, var(--accent) 8%, transparent)' } : {}}
                   >
-                    <td className="w-10 px-3 py-2.5 align-middle">
+                    <td className={`py-2.5 align-middle ${mode === 'collapsed' ? 'w-full px-0' : 'w-10 px-3'}`}>
                       {mode === 'collapsed' ? (
-                        <div className={`w-2.5 h-2.5 rounded-full mx-auto ${dotColors[status.color]}`} />
+                        <div className={`w-3.5 h-3.5 rounded-full mx-auto ${dotColors[status.color]}`} />
                       ) : (
                         <svg
                           className="w-5 h-5 cursor-pointer transition-colors"

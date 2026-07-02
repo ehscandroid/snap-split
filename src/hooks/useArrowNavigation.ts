@@ -14,7 +14,11 @@ const useArrowNavigation = (items: { id: number }[]) => {
         ? Math.min(currentIndex + 1, items.length - 1)
         : Math.max(currentIndex - 1, 0)
       const next = items[nextIndex]
-      if (next) setSearchParams({ id: String(next.id) })
+      if (next) setSearchParams((prev) => {
+        const nextParams = new URLSearchParams(prev)
+        nextParams.set('id', String(next.id))
+        return nextParams
+      })
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)

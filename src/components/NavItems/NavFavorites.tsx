@@ -34,20 +34,17 @@ export const NavFavorites: React.FC<{ navSmall?: boolean }> = ({ navSmall }) => 
 
   return (
     <div className="flex flex-col">
-      <div className="px-2 pt-3 pb-2">
-        <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">Favorites</span>
-      </div>
       {FAVORITES.map((item) => (
         <button
           key={item.id}
-          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors hover:bg-gray-50 dark:hover:bg-white/5 group"
+          className="flex items-center gap-[11px] px-[11px] py-2 rounded-[9px] text-left transition-colors hover:bg-[#f5f7fa] dark:hover:bg-white/5 group cursor-pointer"
         >
-          <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-gray-400 group-hover:text-gray-500 dark:group-hover:text-gray-300">
-            <Icon icon={item.icon} width={14} height={14} />
+          <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-[#94a3b8]">
+            <Icon icon={item.icon} width={16} height={16} />
           </span>
-          <span className="flex-1 truncate text-[13px] font-medium text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200">{item.label}</span>
+          <span className="flex-1 truncate text-[13.5px] font-medium text-[#334155] dark:text-gray-400 group-hover:text-[#0f172a] dark:group-hover:text-gray-200">{item.label}</span>
           {item.meta && (
-            <span className="text-[10px] text-gray-300 dark:text-gray-600 flex-shrink-0">{item.meta}</span>
+            <span className="text-[11px] font-semibold text-[#64748b] dark:text-gray-600 flex-shrink-0">{item.meta}</span>
           )}
         </button>
       ))}

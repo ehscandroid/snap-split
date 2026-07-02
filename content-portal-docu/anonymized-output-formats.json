@@ -1,0 +1,183 @@
+[
+    {
+        "name": "_id",
+        "path": "_id",
+        "displayName": "ID"
+    },
+    {
+        "name": "msdsid",
+        "path": "msdsid",
+        "displayName": "MSDS ID"
+    },
+    {
+        "name": "title",
+        "displayName": "Title",
+        "output": "outputComposite"
+    },
+    {
+        "name": "status",
+        "path": "status.status",
+        "displayName": "Status",
+        "output": "outputStatus",
+        "format": "statuses"
+    },
+    {
+        "name": "sdsdate",
+        "path": "sdsdate",
+        "displayName": "SDS Date",
+        "output": "outputSdsDate"
+    },
+    {
+        "name": "remark",
+        "path": "remark",
+        "displayName": "Remark"
+    },
+    {
+        "name": "country",
+        "path": "metadata.country",
+        "displayName": "Country",
+        "output": "outputCountry"
+    },
+    {
+        "name": "lastUpdate",
+        "path": "metadata.lastUpdate",
+        "displayName": "Last Update",
+        "output": "outputDate"
+    },
+    {
+        "name": "files",
+        "path": "files",
+        "displayName": "Files",
+        "output": "outputFiles",
+        "format": [{
+            "sha": "0de75dd88648b72e252e79da50606b38c3ec46b61eb89c0ebaf1610bf8f0f689",
+            "filename": "xxx.pdf",
+            "sortsize": 220471,
+            "upload": "2024-08-27T13:47:55.000Z",
+            "sdsdate": "2024-05-24T00:00:00.000Z"
+        }]
+    },
+    {
+        "name": "packages",
+        "path": "packages",
+        "displayName": "Packages",
+        "output": "outputPackages",
+        "format": "array"
+    },
+    {
+        "name": "tenants",
+        "path": "tenants",
+        "displayName": "Tenants",
+        "output": "outputTenants",
+        "format": {
+            "tenant": "ten1",
+            "id": "31509",
+            "sdsdate": "2024-05-24T00:00:00.000Z",
+            "sha": "74ba9d0e696774776d98f60257fbe0a1c36065270c57027521885584f476c80a"
+        }
+    },
+    {
+        "name": "parserStatusCode",
+        "path": "metadata.parserRes.statusCode",
+        "displayName": "Status Code"
+    },
+    {
+        "name": "parserFilename",
+        "path": "metadata.parserRes.file name",
+        "displayName": "Filename"
+    },
+    {
+        "name": "parserSha",
+        "path": "metadata.parserRes.sha",
+        "displayName": "SHA"
+    },
+    {
+        "name": "parserTradename",
+        "path": "metadata.parserRes.trade name",
+        "displayName": "Trade Name"
+    },
+    {
+        "name": "parserSuppliername",
+        "path": "metadata.parserRes.supplier name",
+        "displayName": "Supplier Name"
+    },
+    {
+        "name": "parserSuppliermail",
+        "path": "metadata.parserRes.supplier mail",
+        "displayName": "Supplier Mail"
+    },
+    {
+        "name": "parserPrintdate",
+        "path": "metadata.parserRes.print date",
+        "displayName": "Print Date"
+    },
+    {
+        "name": "parserRevisiondate",
+        "path": "metadata.parserRes.revision date",
+        "displayName": "Revision Date"
+    },
+    {
+        "name": "parserLanguages",
+        "path": "metadata.parserRes.languages",
+        "displayName": "Languages"
+    },
+    {
+        "name": "parserQualityinternal",
+        "path": "metadata.parserRes.quality internal",
+        "displayName": "Quality Internal",
+        "output": "outputQuality"
+    },
+    {
+        "name": "parserQuality",
+        "path": "metadata.parserRes.quality",
+        "displayName": "Quality"
+    },
+    {
+        "name": "parserHphrases",
+        "path": "metadata.parserRes.H-phrases",
+        "displayName": "H-Phrases"
+    },
+    {
+        "name": "parserHazardclasses",
+        "path": "metadata.parserRes.hazard classes",
+        "displayName": "Hazard Classes",
+        "output": "outputHazardClasses"
+    },
+    {
+        "name": "parserGhspictograms",
+        "path": "metadata.parserRes.ghs pictograms",
+        "displayName": "GHS Pictograms",
+        "output": "outputGhsPictograms"
+    },
+    {
+        "name": "parserSignalword",
+        "path": "metadata.parserRes.signal word",
+        "displayName": "Signal Word"
+    },
+    {
+        "name": "parserSubstances",
+        "path": "metadata.parserRes.substances",
+        "displayName": "Substances",
+        "output": "outputSubstances"
+    },
+    {
+        "name": "parserType",
+        "path": "metadata.parserRes.type",
+        "displayName": "Type"
+    },
+    {
+        "name": "parserDate",
+        "path": "metadata.parserRes.parserDate",
+        "displayName": "Parse Date"
+    },
+    {
+        "name": "parserDuration",
+        "path": "metadata.parserRes.parserDuration",
+        "displayName": "Duration"
+    },
+    {
+        "name": "similar",
+        "path": "metadata.similar",
+        "displayName": "Similar"
+    }
+]

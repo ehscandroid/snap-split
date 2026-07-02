@@ -1,60 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import useArrowNavigation from '../hooks/useArrowNavigation'
+import { useSdsData } from '../hooks/useSdsData'
+import { useResponsiveColumns } from '../hooks/useResponsiveColumns'
 import TableFiltersModal from './TableFiltersModal'
+import { Status, STATUS_MAP, StatusChipSquare, StatusChipMuted } from './Status'
+import { ToggleRow } from './FormElements'
+import type { SdsItem } from '../types'
 
-interface SdsItem {
-  id: number
-  name: string
-  casNumber: string
-  hazardClass: string
-  status: number
-}
-
-const states: Record<number, { title: string; color: string }> = {
-  0: { title: 'Active',   color: 'green'  },
-  1: { title: 'Draft',    color: 'yellow' },
-  2: { title: 'Archived', color: 'red'    },
-  3: { title: 'Review',   color: 'blue'   },
-}
-
-const chipColors: Record<string, string> = {
-  blue:   'bg-blue-50   text-blue-600   dark:bg-blue-500/10   dark:text-blue-400',
-  yellow: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400',
-  green:  'bg-green-50  text-green-600  dark:bg-green-500/10  dark:text-green-400',
-  red:    'bg-red-50    text-red-500    dark:bg-red-500/10    dark:text-red-400',
-}
-
-const dotColors: Record<string, string> = {
-  blue:   'bg-blue-400   dark:bg-blue-500',
-  yellow: 'bg-yellow-400 dark:bg-yellow-500',
-  green:  'bg-green-500  dark:bg-green-400',
-  red:    'bg-red-400    dark:bg-red-500',
-}
-
-const MOCK_DATA: SdsItem[] = [
-  { id: 1, name: 'Ethanol',           casNumber: '64-17-5',   hazardClass: 'Flammable',  status: 0 },
-  { id: 2, name: 'Acetone',           casNumber: '67-64-1',   hazardClass: 'Flammable',  status: 1 },
-  { id: 3, name: 'Hydrochloric Acid', casNumber: '7647-01-0', hazardClass: 'Corrosive',  status: 0 },
-  { id: 4, name: 'Sodium Hydroxide',  casNumber: '1310-73-2', hazardClass: 'Corrosive',  status: 2 },
-  { id: 5, name: 'Methanol',          casNumber: '67-56-1',   hazardClass: 'Toxic',      status: 3 },
-  { id: 6, name: 'Toluene',           casNumber: '108-88-3',  hazardClass: 'Flammable',  status: 0 },
-  { id: 7, name: 'Benzene',           casNumber: '71-43-2',   hazardClass: 'Carcinogen', status: 1 },
-  { id: 8, name: 'Sulfuric Acid',     casNumber: '7664-93-9', hazardClass: 'Corrosive',  status: 0 },
-]
-
-type Mode = 'collapsed' | 'narrow' | 'full'
-
-const COLLAPSE_WIDTH = parseInt(import.meta.env.VITE_PANEL_COLLAPSE_WIDTH) || 40
-const NARROW_WIDTH   = parseInt(import.meta.env.VITE_TABLE_NARROW_WIDTH)   || 280
-
-const getMode = (width: number): Mode => {
-  if (width <= COLLAPSE_WIDTH) return 'collapsed'
-  if (width <= NARROW_WIDTH)   return 'narrow'
-  return 'full'
-}
-
-type ColKey = 'name' | 'casNumber' | 'hazardClass' | 'status'
+type ColKey = 'name' | 'casNumber' | 'hazardClass' | 'status' | 'manufacturer' | 'signalWord' | 'storageClass' | 'quantity' | 'location' | 'revisionDate'
 
 interface ColDef {
   key: ColKey
@@ -62,28 +16,98 @@ interface ColDef {
 }
 
 const colDefs: ColDef[] = [
-  { key: 'name',       label: 'Name'        },
-  { key: 'casNumber',  label: 'CAS Number'  },
-  { key: 'hazardClass',label: 'Hazard Class'},
-  { key: 'status',     label: 'Status'      },
+  { key: 'name',         label: 'Name'          },
+  { key: 'casNumber',    label: 'CAS Number'    },
+  { key: 'hazardClass',  label: 'Hazard Class'  },
+  { key: 'status',       label: 'Status'        },
+  { key: 'manufacturer', label: 'Manufacturer'  },
+  { key: 'signalWord',   label: 'Signal Word'   },
+  { key: 'storageClass', label: 'Storage Class' },
+  { key: 'quantity',     label: 'Quantity'      },
+  { key: 'location',     label: 'Location'      },
+  { key: 'revisionDate', label: 'Revision Date' },
 ]
 
-const DEFAULT_COLS: ColKey[] = ['name', 'casNumber', 'status']
+const DEFAULT_COLS: ColKey[] = colDefs.map((col) => col.key)
 
 interface SdsTableProps {
   tabResizer?: number
-  searchTerm?: string
   filtersOpen?: boolean
   filtersTab?: number
   onFiltersClose?: () => void
   onSelectionChange?: (count: number) => void
 }
 
-const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, searchTerm = '', filtersOpen = false, filtersTab = 0, onFiltersClose, onSelectionChange }) => {
+const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, filtersOpen = false, filtersTab = 0, onFiltersClose, onSelectionChange }) => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [mode, setMode] = useState<Mode>(() => getMode(tabResizer))
+  const { data, loading } = useSdsData(searchParams)
+
+  const searchTerm = searchParams.get('search') ?? ''
+  const packageTag = searchParams.get('package')
+  const allStatusCodes = Object.keys(STATUS_MAP).map(Number)
+  const statusFilter = (searchParams.get('status') ?? '').split(',').filter(Boolean).map(Number)
+  const dateFrom = searchParams.get('dateFrom') ?? ''
+  const dateTo = searchParams.get('dateTo') ?? ''
+
+  const setDateFrom = (value: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      value ? next.set('dateFrom', value) : next.delete('dateFrom')
+      return next
+    })
+  }
+
+  const setDateTo = (value: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      value ? next.set('dateTo', value) : next.delete('dateTo')
+      return next
+    })
+  }
+
+  const overdueOnly = searchParams.get('overdue') === 'true'
+
+  const toggleOverdueOnly = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      overdueOnly ? next.delete('overdue') : next.set('overdue', 'true')
+      return next
+    })
+  }
+
   const [userCols, setUserCols] = useState<ColKey[]>(DEFAULT_COLS)
   const [selected, setSelected] = useState<Set<number>>(new Set())
+
+  const toggleStatusFilter = (code: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      const raw = (next.get('status') ?? '').split(',').filter(Boolean).map(Number)
+      const current = raw.length ? raw : allStatusCodes
+      const updated = current.includes(code) ? current.filter((c) => c !== code) : [...current, code]
+      updated.length === 0 || updated.length === allStatusCodes.length
+        ? next.delete('status')
+        : next.set('status', updated.join(','))
+      return next
+    })
+  }
+
+  const selectOnlyStatus = (code: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('status', String(code))
+      return next
+    })
+  }
+
+  const selectAllStatuses = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('status')
+      return next
+    })
+  }
+
+  const { mode, visibleCols } = useResponsiveColumns(tabResizer, userCols)
 
   const toggleCol = (key: ColKey) => {
     setUserCols((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key])
@@ -108,36 +132,151 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, searchTerm = '', 
     })
   }
 
-  useEffect(() => { setMode(getMode(tabResizer)) }, [tabResizer])
-
   const activeId = searchParams.get('id') ? Number(searchParams.get('id')) : null
 
-  const filtered = searchTerm
-    ? MOCK_DATA.filter((row) =>
-        row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.casNumber.includes(searchTerm)
-      )
-    : MOCK_DATA
+  const filtered = data
+    .filter((row) => !searchTerm ||
+      row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      row.casNumber.includes(searchTerm)
+    )
+    .filter((row) => !packageTag || row.packages.includes(packageTag))
+    .filter((row) => statusFilter.length === 0 || statusFilter.includes(row.status))
+    .filter((row) => !dateFrom || row.revisionDate >= dateFrom)
+    .filter((row) => !dateTo || row.revisionDate <= dateTo)
 
   useArrowNavigation(filtered)
 
   const handleRowClick = (id: number) => {
-    setSearchParams({ id: String(id) })
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('id', String(id))
+      return next
+    })
   }
 
   return (
     <div className="h-full flex flex-col">
-
 
       <TableFiltersModal
         open={filtersOpen}
         onClose={onFiltersClose!}
         initialTab={filtersTab}
         tabs={[
-          { key: 'columns',  label: 'Columns', icon: 'mdi:table-column'  },
+          { key: 'statuses', label: 'Statuses', icon: 'mdi:tag-multiple-outline' },
           { key: 'advanced', label: 'Filters',  icon: 'mdi:filter-outline' },
+          { key: 'columns',  label: 'Columns', icon: 'mdi:table-column'  },
         ]}
       >
+        <div className="flex flex-col">
+          <div className="flex items-center gap-3 px-6 pb-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-[15px] font-bold text-[#0f172a] dark:text-gray-100">Filter statuses</p>
+              <p className="text-[13px] text-[#64748b] dark:text-gray-500">
+                {statusFilter.length === 0 ? allStatusCodes.length : statusFilter.length} of {allStatusCodes.length} shown
+              </p>
+            </div>
+            {statusFilter.length > 0 && statusFilter.length < allStatusCodes.length && (
+              <button onClick={selectAllStatuses} className="text-[13px] font-medium hover:underline flex-shrink-0" style={{ color: 'var(--accent)' }}>Select all</button>
+            )}
+            <button
+              onClick={onFiltersClose}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors flex-shrink-0"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
+              Done
+            </button>
+          </div>
+
+          <div className="flex flex-col px-6 pb-6 gap-1">
+            {allStatusCodes.map((code) => {
+              const isShown = statusFilter.length === 0 || statusFilter.includes(code)
+              const isOnlySelected = statusFilter.length === 1 && statusFilter[0] === code
+              return (
+                <div key={code} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-[#f5f7fa] dark:hover:bg-white/5 transition-colors">
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={() => selectOnlyStatus(code)}
+                      className={`transition-colors flex-shrink-0 ${isOnlySelected ? 'text-amber-400' : 'text-gray-300 hover:text-amber-400 dark:text-gray-600 dark:hover:text-amber-400'}`}
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill={isOnlySelected ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    <StatusChipSquare code={code} className={isShown ? '' : 'opacity-40'} />
+                  </div>
+                  <button
+                    onClick={() => toggleStatusFilter(code)}
+                    className={`relative w-10 h-[22px] rounded-full transition-colors flex-shrink-0 ${isShown ? 'bg-[var(--accent)]' : 'bg-gray-300 dark:bg-gray-600'}`}
+                  >
+                    <span className={`absolute top-[3px] left-[3px] w-4 h-4 bg-white rounded-full transition-transform ${isShown ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-3 px-6 pb-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-[15px] font-bold text-[#0f172a] dark:text-gray-100">Filters</p>
+              <p className="text-[13px] text-[#64748b] dark:text-gray-500">Narrow results by other criteria</p>
+            </div>
+            <button
+              onClick={onFiltersClose}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors flex-shrink-0"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
+              Done
+            </button>
+          </div>
+
+          <div className="flex flex-col px-6 pb-6 gap-1">
+            <p className="text-[13px] font-semibold text-[#334155] dark:text-gray-300 mb-1">Template filters</p>
+            <ToggleRow
+              title="SDS overdue"
+              subtitle="2+ years old"
+              value={overdueOnly}
+              onChange={toggleOverdueOnly}
+            />
+          </div>
+
+          <div className="flex flex-col px-6 pb-6 gap-2">
+            <p className="text-[13px] font-semibold text-[#334155] dark:text-gray-300">Revision date</p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 flex flex-col gap-1">
+                <label className="text-[12px] text-[#64748b] dark:text-gray-500">From</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  max={dateTo || undefined}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-gray-300 dark:focus:border-white/20"
+                />
+              </div>
+              <div className="flex-1 flex flex-col gap-1">
+                <label className="text-[12px] text-[#64748b] dark:text-gray-500">To</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-gray-300 dark:focus:border-white/20"
+                />
+              </div>
+              {(dateFrom || dateTo) && (
+                <button
+                  onClick={() => { setDateFrom(''); setDateTo('') }}
+                  className="self-end mb-[9px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                  title="Clear dates"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
         <div className="flex flex-col px-6 pb-6 gap-1">
           {colDefs.map((col) => {
             const isActive = userCols.includes(col.key)
@@ -150,9 +289,6 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, searchTerm = '', 
               </button>
             )
           })}
-        </div>
-        <div className="px-6 pb-6">
-          <p className="text-[14px] text-[#64748b] dark:text-gray-500">Filters TBD</p>
         </div>
       </TableFiltersModal>
 
@@ -172,19 +308,19 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, searchTerm = '', 
                     )
                   })()}
                 </th>
-                {userCols.map((col) => (
+                {visibleCols.map((col) => (
                   <th key={col} className={`h-9 px-2 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider sticky top-0 bg-white dark:bg-[#1e1e1e] ${col === 'name' ? '' : 'w-28'}`}>
                     {colDefs.find((d) => d.key === col)?.label}
                   </th>
                 ))}
               </tr>
-              <tr><td colSpan={userCols.length + 1} className="h-px bg-gray-100 dark:bg-white/5 p-0 sticky top-9" /></tr>
+              <tr><td colSpan={visibleCols.length + 1} className="h-px bg-gray-100 dark:bg-white/5 p-0 sticky top-9" /></tr>
             </thead>
           )}
           <tbody>
-            {filtered.length === 0 ? (
+            {loading ? null : filtered.length === 0 ? (
               <tr>
-                <td colSpan={userCols.length + 1} className="py-16 text-center">
+                <td colSpan={visibleCols.length + 1} className="py-16 text-center">
                   <div className="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
                     <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
@@ -196,7 +332,6 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, searchTerm = '', 
             ) : (
               filtered.map((row) => {
                 const isActive = row.id === activeId
-                const status = states[row.status] ?? states[0]
                 return (
                   <tr
                     key={row.id}
@@ -207,7 +342,7 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, searchTerm = '', 
                   >
                     {mode === 'collapsed' ? (
                       <td className="w-full text-center py-2.5 px-2 align-middle">
-                        <div className={`w-3.5 h-3.5 rounded-full mx-auto ${dotColors[status.color]}`} />
+                        <Status code={row.status} form="dot" className="mx-auto" />
                       </td>
                     ) : (<>
                       <td className="w-10 px-3 py-2.5 align-middle">
@@ -216,7 +351,7 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, searchTerm = '', 
                           {selected.has(row.id) && <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" stroke="white" strokeWidth="2.5" />}
                         </svg>
                       </td>
-                      {userCols.map((col) => (
+                      {visibleCols.map((col) => (
                         <td key={col} className="px-2 py-2.5 align-middle">
                           {col === 'name' && (
                             <span className={`text-sm line-clamp-1 ${isActive ? 'font-medium' : 'text-gray-700 dark:text-gray-300'}`} style={isActive ? { color: 'var(--accent)' } : {}}>
@@ -230,9 +365,25 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, searchTerm = '', 
                             <span className="text-xs text-gray-600 dark:text-gray-400">{row.hazardClass}</span>
                           )}
                           {col === 'status' && (
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${chipColors[status.color]}`}>
-                              {status.title}
-                            </span>
+                            <StatusChipMuted code={row.status} />
+                          )}
+                          {col === 'manufacturer' && (
+                            <span className="text-xs text-gray-600 dark:text-gray-400">{row.manufacturer}</span>
+                          )}
+                          {col === 'signalWord' && (
+                            <span className="text-xs text-gray-600 dark:text-gray-400">{row.signalWord}</span>
+                          )}
+                          {col === 'storageClass' && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">{row.storageClass}</span>
+                          )}
+                          {col === 'quantity' && (
+                            <span className="text-xs text-gray-600 dark:text-gray-400">{row.quantity}</span>
+                          )}
+                          {col === 'location' && (
+                            <span className="text-xs text-gray-600 dark:text-gray-400">{row.location}</span>
+                          )}
+                          {col === 'revisionDate' && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">{row.revisionDate}</span>
                           )}
                         </td>
                       ))}</>)}
@@ -247,7 +398,7 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, searchTerm = '', 
       {mode !== 'collapsed' && (
         <div className="flex-shrink-0 flex items-center px-3 h-8 bg-gray-50 dark:bg-white/[0.02] border-t border-gray-100 dark:border-white/5">
           <span className="text-[11px] text-gray-400 dark:text-gray-500">
-            {filtered.length} of {MOCK_DATA.length}
+            {filtered.length} of {data.length}
           </span>
         </div>
       )}

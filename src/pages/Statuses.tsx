@@ -1,4 +1,12 @@
-import { Status, StatusProgress, DueDateChip, SdsDateTag } from '../components/Status'
+import {
+  Status,
+  StatusProgress,
+  DueDateChip,
+  SdsDateTag,
+  StatusChipSquare,
+  StatusChipMuted,
+  StatusChipOutline,
+} from '../components/Status'
 
 const daysFromNow = (days: number): Date => {
   const date = new Date()
@@ -25,10 +33,28 @@ const Statuses = () => {
   return (
     <div className="space-y-8 p-6 max-w-2xl">
       <div>
-        <SectionHeader title="Status — chip" version="v1" date="2026-06-30" />
+        <SectionHeader title="Status — chip (radius 8)" version="v1" date="2026-07-02" />
         <div className="flex flex-wrap gap-3">
           {STATUS_CODES.map((code) => (
-            <Status key={code} code={code} form="chip" />
+            <StatusChipSquare key={code} code={code} />
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <SectionHeader title="Status — muted palette" version="v1" date="2026-07-02" />
+        <div className="flex flex-wrap gap-3">
+          {STATUS_CODES.map((code) => (
+            <StatusChipMuted key={code} code={code} />
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <SectionHeader title="Status — outline palette" version="v1" date="2026-07-02" />
+        <div className="flex flex-wrap gap-3">
+          {STATUS_CODES.map((code) => (
+            <StatusChipOutline key={code} code={code} />
           ))}
         </div>
       </div>
@@ -52,12 +78,12 @@ const Statuses = () => {
       </div>
 
       <div>
-        <SectionHeader title="Status — chip with percent fill" version="v1" date="2026-06-30" />
+        <SectionHeader title="Status — chip with percent fill" version="v1" date="2026-07-02" />
         <div className="flex flex-wrap gap-3">
-          <Status code={2} form="chip" percent={0.45} />
-          <Status code={3} form="chip" percent={0.3} />
-          <Status code={5} form="chip" percent={0.6} />
-          <Status code={91} form="chip" percent={0.9} />
+          <StatusChipSquare code={2} percent={0.45} />
+          <StatusChipSquare code={3} percent={0.3} />
+          <StatusChipSquare code={5} percent={0.6} />
+          <StatusChipSquare code={91} percent={0.9} />
         </div>
       </div>
 

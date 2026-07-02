@@ -5,15 +5,18 @@ import { Panel } from "./Panel";
 import Table from "../components/Table";
 import SdsTable from "../components/SdsTable";
 import SdsEditModal from "../components/SdsEditModal";
-import { NavItem } from "../components/NavItem";
-import { NavFavorites } from "../components/NavFavorites";
-import { NavItemModal } from "../components/NavItemModal";
+import PackagePickerModal from "../components/PackagePickerModal";
+import { Chip } from "../components/Chip/Chip";
+import { NavItem } from "../components/NavItems/NavItem";
+import { NavFavorites } from "../components/NavItems/NavFavorites";
+import { NavItemModal } from "../components/NavItems/NavItemModal";
 import { PackageIcon } from "../components/icons/PackageIcon";
 import { SdsIcon } from "../components/icons/SdsIcon";
 import { DetailHeader } from "../components/PanelHeader";
 import { SplitButton } from '../components/Button';
 import { FlagIcon } from "../components/FlagIcon";
 import ToastSimple from "../components/ToastSimple";
+import NavDivider from "../components/NavItems/NavDivider";
 import { useStateStore } from 'mgsmu-react'
 
 type PanelConfig = {
@@ -120,15 +123,31 @@ const Layout: React.FC = () => {
   const [filtersTab, setFiltersTab] = useState(0);
   const [sdsSelected, setSdsSelected] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
-  const [sdsSearch, setSdsSearch] = useState('');
-  const [sdsTags, setSdsTags] = useState<string[]>([]);
+  const [packagePickerOpen, setPackagePickerOpen] = useState(false);
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  useEffect(() => {
-    const pkg = searchParams.get('package')
-    if (pkg) setSdsTags([pkg])
-  }, [])
+  const sdsSearch = searchParams.get('search') ?? '';
+  const packageTag = searchParams.get('package');
+
+  const setSdsSearch = (value: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      value ? next.set('search', value) : next.delete('search');
+      return next;
+    });
+  };
+
+  const removePackageTag = () => {
+    setSearchParams(new URLSearchParams());
+  };
+
+  const selectPackageTag = (name: string) => {
+    const next = new URLSearchParams();
+    next.set('package', name);
+    setSearchParams(next);
+    setPackagePickerOpen(false);
+  };
 
   const openFilters = (tab: number) => { setFiltersTab(tab); setFiltersOpen(true) }
   const navSmall = navResizer < 120;
@@ -137,6 +156,7 @@ const Layout: React.FC = () => {
   const isSds = location.pathname === '/sds';
   const isTenants = location.pathname === '/tenants';
   const isStatuses = location.pathname === '/statuses';
+  const isChips = location.pathname === '/chips';
   const isPackages = location.pathname === '/packages';
 
   return (
@@ -168,18 +188,21 @@ const Layout: React.FC = () => {
         </>}
         onResizeStart={() => setResizing(0)}
       >
+        <NavItem icon="mdi:file-document-outline" iconNode={<SdsIcon className="w-[18px] h-[18px]" />} label="SDS" navSmall={navSmall} to="sds" />
+        <NavItem icon="mdi:package-variant-closed" iconNode={<PackageIcon className="w-[18px] h-[18px]" />} label="Packages" navSmall={navSmall} to="packages" />
+        <NavItem icon="mdi:domain" label="Tenants" navSmall={navSmall} to="tenants" />
+        <NavDivider title="Components" />       
         <NavItem icon="mdi:home-outline" label="Home" navSmall={navSmall} to="/" />
+        <NavItem icon="mdi:list-status" label="Statuses" navSmall={navSmall} to="statuses" />
+        <NavItem icon="mdi:shape-outline" label="Chips" navSmall={navSmall} to="chips" />
         <NavItem icon="mdi:form-select" label="Form" navSmall={navSmall} to="form" />
         <NavItem icon="mdi:button-cursor" label="Buttons" navSmall={navSmall} to="buttons" />
-        <NavItem icon="mdi:file-document-outline" iconNode={<SdsIcon className="w-[18px] h-[18px]" />} label="SDS" navSmall={navSmall} to="sds" />
-        <NavItem icon="mdi:domain" label="Tenants" navSmall={navSmall} to="tenants" />
-        <NavItem icon="mdi:list-status" label="Statuses" navSmall={navSmall} to="statuses" />
-        <NavItem icon="mdi:package-variant-closed" iconNode={<PackageIcon className="w-[18px] h-[18px]" />} label="Packages" navSmall={navSmall} to="packages" />
         <NavItem icon="mdi:fullscreen" label="Full View" navSmall={navSmall} to="fullview" />
+        <NavDivider title="Favorites" />  
         <NavFavorites navSmall={navSmall} />
       </Panel>
 
-      {!isFullView && !isTenants && !isStatuses && !isPackages && <Panel
+      {!isFullView && !isTenants && !isStatuses && !isChips && !isPackages && <Panel
         width={middleWidth}
         minWidth={panelConfigs[1].minWidth}
         maxWidth={panelConfigs[1].maxWidth}
@@ -196,14 +219,17 @@ const Layout: React.FC = () => {
                 {/* <svg className="w-4 h-4 text-gray-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeLinecap="round" />
                 </svg> */}
-                {sdsTags.map((tag) => (
-                  <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-white dark:bg-white/10 border border-gray-200 dark:border-white/15 text-gray-600 dark:text-gray-300 shadow-sm">
-                    {tag}
-                    <button onClick={() => setSdsTags((prev) => prev.filter((t) => t !== tag))} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" /></svg>
-                    </button>
-                  </span>
-                ))}
+                {packageTag && (
+                  <Chip iconNode={<PackageIcon className="w-3.5 h-3.5" />} label={packageTag} onClick={() => setPackagePickerOpen(true)} />
+                )}
+                {!packageTag && (
+                  <button
+                    onClick={() => setPackagePickerOpen(true)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 border border-dashed border-gray-300 dark:border-white/15"
+                  >
+                    + Package
+                  </button>
+                )}
                 <input
                   type="text"
                   placeholder="Search SDS"
@@ -242,18 +268,18 @@ const Layout: React.FC = () => {
         }
       >
         {isSds
-          ? <SdsTable tabResizer={tabResizer} searchTerm={sdsSearch} filtersOpen={filtersOpen} filtersTab={filtersTab} onFiltersClose={() => setFiltersOpen(false)} onSelectionChange={setSdsSelected} />
+          ? <SdsTable tabResizer={tabResizer} filtersOpen={filtersOpen} filtersTab={filtersTab} onFiltersClose={() => setFiltersOpen(false)} onSelectionChange={setSdsSelected} />
           : <Table tabResizer={tabResizer} columnsOpen={columnsOpen} onColumnsClose={() => setColumnsOpen(false)} />
         }
       </Panel>}
 
-      {(isTenants || isStatuses || isPackages) && (
+      {(isTenants || isStatuses || isChips || isPackages) && (
         <Panel fill noPadding showHandle={false}>
           <Outlet />
         </Panel>
       )}
 
-      {!isTenants && !isStatuses && !isPackages && <Panel
+      {!isTenants && !isStatuses && !isChips && !isPackages && <Panel
         width={rightWidth}
         minWidth={panelConfigs[2].minWidth}
         collapseWidth={panelConfigs[2].collapseWidth}
@@ -314,6 +340,13 @@ const Layout: React.FC = () => {
         selectedCount={sdsSelected}
         onDelete={() => { console.log('delete', sdsSelected); setEditOpen(false) }}
         onDownload={() => { console.log('download', sdsSelected); setEditOpen(false) }}
+      />
+      <PackagePickerModal
+        open={packagePickerOpen}
+        onClose={() => setPackagePickerOpen(false)}
+        onSelect={selectPackageTag}
+        onClear={() => { removePackageTag(); setPackagePickerOpen(false) }}
+        activePackage={packageTag}
       />
       <ToastSimple />
     </div>

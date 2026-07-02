@@ -8,6 +8,7 @@ export { ColorPicker } from './ColorPicker';
 export { TimePicker } from './TimePicker';
 export { GrowingTextarea } from './GrowingTextarea';
 export { ToggleSwitch } from './ToggleSwitch';
+export { ToggleRow } from './ToggleRow';
 export { FileUpload } from './FileUpload';
 export { HintText } from './HintText';
 export { ImageSlider } from './ImageSlider';

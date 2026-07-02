@@ -1,3 +1,5 @@
+import { lighten } from './colorUtils';
+
 interface StatusProps {
   code: number;
   form?: 'chip' | 'circle' | 'dot';
@@ -27,17 +29,6 @@ export const STATUS_MAP: Record<number, StatusConfig> = {
 };
 
 export const FALLBACK_STATUS: StatusConfig = { title: 'unknown', background: '#BDC1C6', color: '#FFFFFF' };
-
-const lighten = (hex: string, ratio: number): string => {
-  const value = hex.replace('#', '');
-  const r = parseInt(value.substring(0, 2), 16);
-  const g = parseInt(value.substring(2, 4), 16);
-  const b = parseInt(value.substring(4, 6), 16);
-
-  const mix = (channel: number) => Math.round(channel + (255 - channel) * ratio);
-
-  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
-};
 
 export const Status: React.FC<StatusProps> = ({ code, form = 'chip', percent, title: titleOverride, className = '' }) => {
   const { title: defaultTitle, background, color } = STATUS_MAP[code] ?? FALLBACK_STATUS;
