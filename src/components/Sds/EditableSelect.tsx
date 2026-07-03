@@ -13,7 +13,11 @@ export const EditableSelect: React.FC<EditableSelectProps> = ({ value, onChange,
 
   return (
     <>
-      <div className={`flex items-center gap-2 rounded pr-2 transition-[padding] duration-200 ${editable ? 'pl-2 py-1 bg-white/60 dark:bg-black/10' : 'pl-0 py-0 bg-transparent'}`}>
+      <div
+        className={`flex items-center gap-2 rounded pr-2 py-1 border transition-[padding-left,background-color,border-color] duration-200 ${
+          editable ? 'pl-2 bg-gray-50 dark:bg-black/25 border-gray-200 dark:border-white/10' : 'pl-0 bg-transparent border-transparent'
+        }`}
+      >
         <input
           type="text"
           value={value}

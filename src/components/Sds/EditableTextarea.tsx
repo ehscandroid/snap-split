@@ -14,7 +14,11 @@ export const EditableTextarea: React.FC<EditableValueProps> = ({ value, onChange
   useEffect(() => { adjustHeight() }, [value])
 
   return (
-    <div className={`flex items-start gap-2 rounded p-2 ${editable ? 'bg-white/60 dark:bg-black/10' : 'bg-transparent'}`}>
+    <div
+      className={`flex items-start gap-2 rounded border p-2 transition-colors duration-200 ${
+        editable ? 'bg-gray-50 dark:bg-black/25 border-gray-200 dark:border-white/10' : 'bg-transparent border-transparent'
+      }`}
+    >
       <textarea
         ref={textareaRef}
         value={value}

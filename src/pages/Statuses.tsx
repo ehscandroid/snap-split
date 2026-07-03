@@ -1,8 +1,13 @@
+import { useState } from 'react'
 import {
   Status,
   StatusProgress,
   DueDateChip,
   SdsDateTag,
+  DateTag,
+  UploadChip,
+  TenantChip,
+  TenantChipCompact,
   StatusChipSquare,
   StatusChipMuted,
   StatusChipOutline,
@@ -30,6 +35,16 @@ const SectionHeader = ({ title, version, date }: { title: string; version: strin
 const STATUS_CODES = [0, 1, 2, 3, 4, 5, 90, 91, 92, 98, 99]
 
 const Statuses = () => {
+  const [selectedTenants, setSelectedTenants] = useState<Set<number>>(new Set([1]))
+
+  const toggleTenant = (id: number) => {
+    setSelectedTenants((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
   return (
     <div className="space-y-8 p-6 max-w-2xl">
       <div>
@@ -137,6 +152,52 @@ const Statuses = () => {
           <SdsDateTag date={yearsFromNow(-2)} />
           <SdsDateTag date={daysFromNow(-731)} />
           <SdsDateTag date={yearsFromNow(-5)} />
+        </div>
+      </div>
+
+      <div>
+        <SectionHeader title="Status — basic date tag" version="v1" date="2026-07-03" />
+        <div className="flex flex-wrap gap-3">
+          <DateTag date={daysFromNow(0)} />
+          <DateTag date={daysFromNow(-14)} />
+          <DateTag date={yearsFromNow(-1)} />
+          <DateTag date={daysFromNow(0)} tone="progress" />
+          <DateTag date={daysFromNow(-5)} tone="progress" />
+          <DateTag date={daysFromNow(3)} tone="progress" />
+        </div>
+      </div>
+
+      <div>
+        <SectionHeader title="Status — upload chip" version="v1" date="2026-07-03" />
+        <div className="flex flex-wrap gap-3">
+          <UploadChip uploadedAt={daysFromNow(-30)} latestAvailableAt={daysFromNow(-2)} />
+          <UploadChip latestAvailableAt={daysFromNow(-1)} />
+          <UploadChip uploadedAt={daysFromNow(-5)} latestAvailableAt={daysFromNow(-10)} />
+          <UploadChip uploadedAt={daysFromNow(-5)} latestAvailableAt={daysFromNow(-10)} failed />
+          <UploadChip uploadedAt={daysFromNow(-5)} latestAvailableAt={daysFromNow(-10)} failed reason="File too large" />
+          <UploadChip uploadedAt={daysFromNow(-5)} latestAvailableAt={daysFromNow(-10)} failed reason="Invalid format" />
+          <UploadChip uploadedAt={daysFromNow(-5)} latestAvailableAt={daysFromNow(-10)} failed reason="Connection timeout" />
+        </div>
+      </div>
+
+      <div>
+        <SectionHeader title="Status — tenant chip" version="v1" date="2026-07-03" />
+        <div className="flex flex-wrap gap-3">
+          <TenantChip tenantId={1} tenantName="Acme Corp" uploadedAt={daysFromNow(-30)} latestAvailableAt={daysFromNow(-2)} selected={selectedTenants.has(1)} onSelect={() => toggleTenant(1)} />
+          <TenantChip tenantId={2} tenantName="Globex Inc" latestAvailableAt={daysFromNow(-1)} selected={selectedTenants.has(2)} onSelect={() => toggleTenant(2)} />
+          <TenantChip tenantId={3} tenantName="Initech" uploadedAt={daysFromNow(-5)} latestAvailableAt={daysFromNow(-10)} selected={selectedTenants.has(3)} onSelect={() => toggleTenant(3)} />
+          <TenantChip tenantId={4} tenantName="Umbrella Ltd" uploadedAt={daysFromNow(-5)} latestAvailableAt={daysFromNow(-10)} failed reason="File too large" selected={selectedTenants.has(4)} onSelect={() => toggleTenant(4)} />
+          <TenantChip tenantId={5} tenantName="Hooli" uploadedAt={daysFromNow(-5)} latestAvailableAt={daysFromNow(-10)} failed reason="Connection timeout" selected={selectedTenants.has(5)} onSelect={() => toggleTenant(5)} />
+        </div>
+      </div>
+
+      <div>
+        <SectionHeader title="Status — tenant chip (compact)" version="v1" date="2026-07-03" />
+        <div className="flex flex-wrap gap-3">
+          <TenantChipCompact tenantId={1} tenantName="Acme Corp" uploadedAt={daysFromNow(-30)} latestAvailableAt={daysFromNow(-2)} />
+          <TenantChipCompact tenantId={2} tenantName="Globex Inc" latestAvailableAt={daysFromNow(-1)} />
+          <TenantChipCompact tenantId={3} tenantName="Initech" uploadedAt={daysFromNow(-5)} latestAvailableAt={daysFromNow(-10)} />
+          <TenantChipCompact tenantId={4} tenantName="Umbrella Ltd" uploadedAt={daysFromNow(-5)} latestAvailableAt={daysFromNow(-10)} failed />
         </div>
       </div>
     </div>

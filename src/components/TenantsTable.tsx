@@ -1,21 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import useArrowNavigation from '../hooks/useArrowNavigation'
-
-interface Tenant {
-  id: number
-  name: string
-  email: string
-  plan: string
-  status: number
-}
-
-const states: Record<number, { title: string; color: string }> = {
-  0: { title: 'Active',    color: 'green'  },
-  1: { title: 'Trial',     color: 'blue'   },
-  2: { title: 'Suspended', color: 'red'    },
-  3: { title: 'Pending',   color: 'yellow' },
-}
+import { useTenants } from '../hooks/useTenants'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { TENANT_STATUSES } from '../data/mockTenants'
 
 const chipColors: Record<string, string> = {
   blue:   'bg-blue-50   text-blue-600   dark:bg-blue-500/10   dark:text-blue-400',
@@ -30,17 +18,6 @@ const dotColors: Record<string, string> = {
   green:  'bg-green-500  dark:bg-green-400',
   red:    'bg-red-400    dark:bg-red-500',
 }
-
-const MOCK_DATA: Tenant[] = [
-  { id: 1, name: 'Acme Corp',        email: 'admin@acme.com',      plan: 'Enterprise', status: 0 },
-  { id: 2, name: 'Globex Inc',       email: 'it@globex.com',       plan: 'Pro',        status: 1 },
-  { id: 3, name: 'Initech',          email: 'ops@initech.com',     plan: 'Starter',    status: 3 },
-  { id: 4, name: 'Umbrella Ltd',     email: 'admin@umbrella.com',  plan: 'Enterprise', status: 2 },
-  { id: 5, name: 'Hooli',            email: 'dev@hooli.com',       plan: 'Pro',        status: 0 },
-  { id: 6, name: 'Pied Piper',       email: 'richard@pp.com',      plan: 'Starter',    status: 1 },
-  { id: 7, name: 'Dunder Mifflin',   email: 'michael@dm.com',      plan: 'Pro',        status: 0 },
-  { id: 8, name: 'Vandelay Ind.',    email: 'art@vandelay.com',    plan: 'Enterprise', status: 3 },
-]
 
 type Mode = 'collapsed' | 'narrow' | 'full'
 
@@ -62,18 +39,21 @@ interface TenantsTableProps {
 const TenantsTable: React.FC<TenantsTableProps> = ({ tabResizer = 400, onRowClick, onAdd }) => {
   const [searchParams] = useSearchParams()
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300)
   const [mode, setMode] = useState<Mode>(() => getMode(tabResizer))
+  const { tenants } = useTenants()
 
   useEffect(() => { setMode(getMode(tabResizer)) }, [tabResizer])
 
   const activeId = searchParams.get('id') ? Number(searchParams.get('id')) : null
 
-  const filtered = searchTerm
-    ? MOCK_DATA.filter((row) =>
-        row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.email.toLowerCase().includes(searchTerm.toLowerCase())
+  // TODO: once paginated, replace this client-side filter with a backend query using debouncedSearchTerm
+  const filtered = debouncedSearchTerm
+    ? tenants.filter((row) =>
+        row.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        row.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
       )
-    : MOCK_DATA
+    : tenants
 
   useArrowNavigation(filtered)
 
@@ -147,7 +127,7 @@ const TenantsTable: React.FC<TenantsTableProps> = ({ tabResizer = 400, onRowClic
             ) : (
               filtered.map((row) => {
                 const isActive = row.id === activeId
-                const status = states[row.status] ?? states[0]
+                const status = TENANT_STATUSES[row.status] ?? TENANT_STATUSES[0]
                 return (
                   <tr
                     key={row.id}
@@ -196,7 +176,7 @@ const TenantsTable: React.FC<TenantsTableProps> = ({ tabResizer = 400, onRowClic
       {mode !== 'collapsed' && (
         <div className="flex-shrink-0 flex items-center px-3 h-8 bg-gray-50 dark:bg-white/[0.02] border-t border-gray-100 dark:border-white/5">
           <span className="text-[11px] text-gray-400 dark:text-gray-500">
-            {filtered.length} of {MOCK_DATA.length}
+            {filtered.length} of {tenants.length}
           </span>
         </div>
       )}
