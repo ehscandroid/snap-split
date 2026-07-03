@@ -2,24 +2,11 @@ import React, { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { StatusProgress, DueDateChip } from './Status'
 import useArrowNavigation from '../hooks/useArrowNavigation'
+import { useFavorites } from '../hooks/useFavorites'
+import { usePackages } from '../hooks/usePackages'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 
 type PackageContext = 'normal' | 'archived'
-
-interface Package {
-  id: number
-  name: string
-  dueDate: string
-  items: number
-  statusBreakdown: Record<number, number>
-}
-
-// TODO: replace with real package data
-const MOCK_DATA: Package[] = [
-  { id: 1, name: 'Starter Package',    dueDate: '2026-07-15', items: 24, statusBreakdown: { 1: 0.05, 5: 0.95 } },
-  { id: 2, name: 'Pro Package',        dueDate: '2026-08-02', items: 58, statusBreakdown: { 0: 0.2, 3: 0.5, 91: 0.3 } },
-  { id: 3, name: 'Enterprise Package', dueDate: '2026-09-20', items: 142, statusBreakdown: { 2: 0.15, 5: 0.25, 90: 0.4, 92: 0.2 } },
-  { id: 4, name: 'Legacy Package',     dueDate: '2026-06-15', items: 9, statusBreakdown: { 91: 1 } },
-]
 
 interface PackagesTableProps {
   onRowClick: (id: number) => void
@@ -30,12 +17,16 @@ const PackagesTable: React.FC<PackagesTableProps> = ({ onRowClick, onAdd }) => {
   const [searchParams] = useSearchParams()
   const [searchTerm, setSearchTerm] = useState('')
   const [context, setContext] = useState<PackageContext>('normal')
+  const { favoriteIds, toggleFavorite } = useFavorites()
+  const { packages } = usePackages()
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300)
 
   const activeId = searchParams.get('id') ? Number(searchParams.get('id')) : null
 
-  const filtered = searchTerm
-    ? MOCK_DATA.filter((row) => row.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    : MOCK_DATA
+  // TODO: once paginated, replace this client-side filter with a backend query using debouncedSearchTerm
+  const filtered = packages
+    .filter((row) => row.archived === (context === 'archived'))
+    .filter((row) => !debouncedSearchTerm || row.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
 
   useArrowNavigation(filtered)
 
@@ -76,6 +67,7 @@ const PackagesTable: React.FC<PackagesTableProps> = ({ onRowClick, onAdd }) => {
         <table className="w-full border-collapse">
           <thead>
             <tr>
+              <th className="w-10 px-3 h-9 text-left sticky top-0 bg-white dark:bg-[#1e1e1e]" />
               <th className="h-9 px-2 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider sticky top-0 bg-white dark:bg-[#1e1e1e]">
                 Package Name
               </th>
@@ -89,12 +81,12 @@ const PackagesTable: React.FC<PackagesTableProps> = ({ onRowClick, onAdd }) => {
                 Progress
               </th>
             </tr>
-            <tr><td colSpan={4} className="h-px bg-gray-100 dark:bg-white/5 p-0 sticky top-9" /></tr>
+            <tr><td colSpan={5} className="h-px bg-gray-100 dark:bg-white/5 p-0 sticky top-9" /></tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={4} className="py-16 text-center">
+                <td colSpan={5} className="py-16 text-center">
                   <div className="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
                     <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
@@ -113,6 +105,17 @@ const PackagesTable: React.FC<PackagesTableProps> = ({ onRowClick, onAdd }) => {
                     className={`border-b border-gray-100 dark:border-white/5 transition-colors duration-100 cursor-pointer ${isActive ? '' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
                     style={isActive ? { backgroundColor: 'color-mix(in srgb, var(--accent) 8%, transparent)' } : {}}
                   >
+                    <td className="w-10 px-3 py-2.5 align-middle">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: row.id, name: row.name }) }}
+                        title={favoriteIds.has(row.id) ? 'Remove from favorites' : 'Add to favorites'}
+                        className={`transition-colors ${favoriteIds.has(row.id) ? 'text-amber-400' : 'text-gray-300 hover:text-amber-400 dark:text-gray-600 dark:hover:text-amber-400'}`}
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill={favoriteIds.has(row.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                    </td>
                     <td className="py-2.5 px-2 align-middle">
                       <span
                         className={`text-sm line-clamp-1 ${isActive ? 'font-medium' : 'text-gray-700 dark:text-gray-300'}`}
@@ -140,7 +143,7 @@ const PackagesTable: React.FC<PackagesTableProps> = ({ onRowClick, onAdd }) => {
 
       <div className="flex-shrink-0 flex items-center justify-between px-3 h-8 bg-gray-50 dark:bg-white/[0.02] border-t border-gray-100 dark:border-white/5">
         <span className="text-[11px] text-gray-400 dark:text-gray-500">
-          {filtered.length} of {MOCK_DATA.length}
+          {filtered.length} of {packages.filter((row) => row.archived === (context === 'archived')).length}
         </span>
         <div className="flex items-center gap-1">
           {(['normal', 'archived'] as const).map((option) => (

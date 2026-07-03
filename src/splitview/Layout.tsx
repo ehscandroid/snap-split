@@ -188,6 +188,7 @@ const Layout: React.FC = () => {
         </>}
         onResizeStart={() => setResizing(0)}
       >
+        <NavDivider title="HazChem" />  
         <NavItem icon="mdi:file-document-outline" iconNode={<SdsIcon className="w-[18px] h-[18px]" />} label="SDS" navSmall={navSmall} to="sds" />
         <NavItem icon="mdi:package-variant-closed" iconNode={<PackageIcon className="w-[18px] h-[18px]" />} label="Packages" navSmall={navSmall} to="packages" />
         <NavItem icon="mdi:domain" label="Tenants" navSmall={navSmall} to="tenants" />
