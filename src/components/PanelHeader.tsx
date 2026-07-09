@@ -169,7 +169,7 @@ export const DetailHeader: React.FC<DetailHeaderProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`flex flex-col gap-3 ${className} p-2 w-full`}>
+    <div className={`flex flex-col gap-3 ${className} w-full`}>
       <div className="flex items-center gap-4 w-full">
         {icon && (
           <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"

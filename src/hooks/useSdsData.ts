@@ -41,5 +41,12 @@ export const useSdsData = (searchParams: URLSearchParams) => {
     setData((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)))
   }, [])
 
-  return { data, loading, error, updateItem }
+  const reloadItem = useCallback(async (id: number) => {
+    await delay(SIMULATED_DELAY_MS)
+    const fresh = MOCK_SDS.find((row) => row.id === id)
+    if (!fresh) return
+    setData((prev) => prev.map((row) => (row.id === id ? fresh : row)))
+  }, [])
+
+  return { data, loading, error, updateItem, reloadItem }
 }

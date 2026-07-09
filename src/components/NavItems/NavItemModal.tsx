@@ -4,6 +4,17 @@ import { useTheme } from '../../context/ThemeContext'
 import { useAccent, ACCENT_COLORS } from '../../context/AccentContext'
 import { Modal } from '../Modal'
 
+const CONCURRENT_PARSES_KEY = 'concurrent-parses'
+const CONCURRENT_PARSES_MIN = 1
+const CONCURRENT_PARSES_MAX = 5
+const CONCURRENT_PARSES_DEFAULT = 3
+
+export const getConcurrentParses = (): number => {
+  const stored = localStorage.getItem(CONCURRENT_PARSES_KEY)
+  const parsed = stored ? parseInt(stored, 10) : CONCURRENT_PARSES_DEFAULT
+  return Number.isNaN(parsed) ? CONCURRENT_PARSES_DEFAULT : Math.min(CONCURRENT_PARSES_MAX, Math.max(CONCURRENT_PARSES_MIN, parsed))
+}
+
 interface NavItemModalProps {
   icon: string
   label: string
@@ -28,6 +39,13 @@ export const NavItemModal: React.FC<NavItemModalProps> = ({
   const [isOpen, setIsOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
   const { accent, setAccent } = useAccent()
+  const [concurrentParses, setConcurrentParses] = useState(getConcurrentParses)
+
+  const updateConcurrentParses = (value: number) => {
+    const clamped = Math.min(CONCURRENT_PARSES_MAX, Math.max(CONCURRENT_PARSES_MIN, value))
+    localStorage.setItem(CONCURRENT_PARSES_KEY, clamped.toString())
+    setConcurrentParses(clamped)
+  }
 
   const isCollapsed = collapsed || navSmall
 
@@ -79,6 +97,30 @@ export const NavItemModal: React.FC<NavItemModalProps> = ({
                   )}
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4 px-6 py-4 border-t border-[#f1f4f8] dark:border-white/5">
+            <div className="flex-1">
+              <div className="text-[14px] font-semibold text-[#0f172a] dark:text-gray-100">Concurrent Parses</div>
+              <div className="text-[13px] text-[#64748b] dark:text-gray-400 mt-0.5">Max rows parsed at the same time.</div>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <button
+                onClick={() => updateConcurrentParses(concurrentParses - 1)}
+                disabled={concurrentParses <= CONCURRENT_PARSES_MIN}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Icon icon="mdi:minus" width={14} height={14} />
+              </button>
+              <span className="w-4 text-center text-[14px] font-semibold text-[#0f172a] dark:text-gray-100">{concurrentParses}</span>
+              <button
+                onClick={() => updateConcurrentParses(concurrentParses + 1)}
+                disabled={concurrentParses >= CONCURRENT_PARSES_MAX}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Icon icon="mdi:plus" width={14} height={14} />
+              </button>
             </div>
           </div>
         </div>

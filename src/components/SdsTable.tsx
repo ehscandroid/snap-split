@@ -1,12 +1,43 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useStateStore } from 'mgsmu-react'
 import useArrowNavigation from '../hooks/useArrowNavigation'
 import { useSdsData } from '../hooks/useSdsData'
 import { useResponsiveColumns } from '../hooks/useResponsiveColumns'
 import TableFiltersModal from './TableFiltersModal'
 import { Status, STATUS_MAP, StatusChipSquare, StatusChipMuted } from './Status'
 import { ToggleRow } from './FormElements'
+import { Checkbox } from './Checkbox'
+import { getConcurrentParses } from './NavItems/NavItemModal'
 import type { SdsItem } from '../types'
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+class AbortedError extends Error {}
+
+// Stands in for the real parse request; swap the body for `fetch(url, { signal })` once the backend endpoint exists.
+const mockParseRequest = (ms: number, signal: AbortSignal): Promise<void> =>
+  new Promise((resolve, reject) => {
+    if (signal.aborted) { reject(new AbortedError()); return }
+    const timer = setTimeout(resolve, ms)
+    signal.addEventListener('abort', () => {
+      clearTimeout(timer)
+      reject(new AbortedError())
+    })
+  })
+
+const PARSE_START_STAGGER_MS = 1000
+
+const NAME_COL_STORAGE_KEY = 'sds-table-name-col-width'
+const NAME_COL_MIN_WIDTH = 80
+const NAME_COL_MAX_WIDTH = 600
+const NAME_COL_DEFAULT_WIDTH = 220
+
+const getStoredNameColWidth = (): number => {
+  const stored = localStorage.getItem(NAME_COL_STORAGE_KEY)
+  const parsed = stored ? parseInt(stored, 10) : NAME_COL_DEFAULT_WIDTH
+  return Number.isNaN(parsed) ? NAME_COL_DEFAULT_WIDTH : Math.min(NAME_COL_MAX_WIDTH, Math.max(NAME_COL_MIN_WIDTH, parsed))
+}
 
 type ColKey = 'name' | 'casNumber' | 'hazardClass' | 'status' | 'manufacturer' | 'signalWord' | 'storageClass' | 'quantity' | 'location' | 'revisionDate'
 
@@ -40,7 +71,7 @@ interface SdsTableProps {
 
 const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, filtersOpen = false, filtersTab = 0, onFiltersClose, onSelectionChange }) => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { data, loading } = useSdsData(searchParams)
+  const { data, loading, reloadItem } = useSdsData(searchParams)
 
   const searchTerm = searchParams.get('search') ?? ''
   const packageTag = searchParams.get('package')
@@ -75,8 +106,161 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, filtersOpen = fal
     })
   }
 
+  const [nameColWidth, setNameColWidth] = useState(getStoredNameColWidth)
+  const [resizingNameCol, setResizingNameCol] = useState(false)
+
+  useEffect(() => {
+    localStorage.setItem(NAME_COL_STORAGE_KEY, nameColWidth.toString())
+  }, [nameColWidth])
+
+  useEffect(() => {
+    if (!resizingNameCol) return
+
+    const onMove = (e: MouseEvent) => {
+      const dx = e.movementX
+      setNameColWidth((w) => Math.min(NAME_COL_MAX_WIDTH, Math.max(NAME_COL_MIN_WIDTH, w + dx)))
+    }
+    const onUp = () => setResizingNameCol(false)
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+  }, [resizingNameCol])
+
   const [userCols, setUserCols] = useState<ColKey[]>(DEFAULT_COLS)
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [parsingIds, setParsingIds] = useState<Set<number>>(new Set())
+  const [parseErrorIds, setParseErrorIds] = useState<Set<number>>(new Set())
+  const [parseSuccessIds, setParseSuccessIds] = useState<Set<number>>(new Set())
+  const [parseAttentionIds, setParseAttentionIds] = useState<Set<number>>(new Set())
+  const [flickerId, setFlickerId] = useState<number | null>(null)
+  const selectedRef = useRef(selected)
+  selectedRef.current = selected
+
+  const [parseTrigger] = useStateStore('sdsParseTrigger')
+  const [parseStop] = useStateStore('sdsParseStop')
+  const [, setParseRunning] = useStateStore('sdsParseRunning')
+  const stopRef = useRef(false)
+  const abortControllersRef = useRef(new Map<number, AbortController>())
+
+  useEffect(() => {
+    if (!parseStop) return
+    stopRef.current = true
+    abortControllersRef.current.forEach((controller) => controller.abort())
+    abortControllersRef.current.clear()
+    setParseRunning({ running: false })
+  }, [parseStop])
+
+  useEffect(() => {
+    if (!parseTrigger) return
+
+    stopRef.current = false
+    setParseRunning({ running: true })
+
+    const queue = Array.from(selectedRef.current)
+    const maxConcurrent = getConcurrentParses()
+    let runningCount = 0
+
+    const finishIfDone = () => {
+      if (runningCount === 0 && (queue.length === 0 || stopRef.current)) {
+        setParseRunning({ running: false })
+      }
+    }
+
+    const tryStartNext = () => {
+      if (stopRef.current) { finishIfDone(); return }
+      if (runningCount >= maxConcurrent) return
+      if (queue.length === 0) { finishIfDone(); return }
+
+      const id = queue.shift()!
+      if (!selectedRef.current.has(id)) {
+        tryStartNext()
+        return
+      }
+
+      runningCount++
+      parseRow(id).finally(() => {
+        runningCount--
+        tryStartNext()
+        finishIfDone()
+      })
+
+      wait(PARSE_START_STAGGER_MS).then(tryStartNext)
+    }
+
+    const parseRow = async (id: number) => {
+      if (stopRef.current) return
+      setParsingIds((prev) => new Set(prev).add(id))
+
+      const controller = new AbortController()
+      abortControllersRef.current.set(id, controller)
+
+      try {
+        await mockParseRequest(5000, controller.signal)
+      } catch (err) {
+        if (err instanceof AbortedError) {
+          abortControllersRef.current.delete(id)
+          setParsingIds((prev) => {
+            const next = new Set(prev)
+            next.delete(id)
+            return next
+          })
+          return
+        }
+        throw err
+      }
+      abortControllersRef.current.delete(id)
+
+      const roll = Math.random()
+      const outcome = roll < 1 / 3 ? 'error' : roll < 2 / 3 ? 'attention' : 'success'
+
+      setParseErrorIds((prev) => {
+        const next = new Set(prev)
+        outcome === 'error' ? next.add(id) : next.delete(id)
+        return next
+      })
+      setParseSuccessIds((prev) => {
+        const next = new Set(prev)
+        outcome === 'success' ? next.add(id) : next.delete(id)
+        return next
+      })
+      setParseAttentionIds((prev) => {
+        const next = new Set(prev)
+        outcome === 'attention' ? next.add(id) : next.delete(id)
+        return next
+      })
+
+      if (outcome === 'success' || outcome === 'attention') {
+        await reloadItem(id)
+        setFlickerId(id)
+        wait(600).then(() => setFlickerId((current) => (current === id ? null : current)))
+      }
+
+      setParsingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      setSelected((prev) => {
+        if (!prev.has(id)) return prev
+        const next = new Set(prev)
+        next.delete(id)
+        onSelectionChange?.(next.size)
+        return next
+      })
+    }
+
+    tryStartNext()
+
+    return () => {
+      stopRef.current = true
+      abortControllersRef.current.forEach((controller) => controller.abort())
+      abortControllersRef.current.clear()
+    }
+  }, [parseTrigger])
 
   const toggleStatusFilter = (code: number) => {
     setSearchParams((prev) => {
@@ -113,12 +297,31 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, filtersOpen = fal
     setUserCols((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key])
   }
 
-  const toggleSelect = (e: React.MouseEvent, id: number) => {
-    e.stopPropagation()
+  const toggleSelect = (id: number) => {
+    const hadOutcome = parseSuccessIds.has(id) || parseErrorIds.has(id) || parseAttentionIds.has(id)
+
     setSelected((prev) => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      hadOutcome || next.has(id) ? next.delete(id) : next.add(id)
       onSelectionChange?.(next.size)
+      return next
+    })
+    setParseSuccessIds((prev) => {
+      if (!prev.has(id)) return prev
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+    setParseErrorIds((prev) => {
+      if (!prev.has(id)) return prev
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+    setParseAttentionIds((prev) => {
+      if (!prev.has(id)) return prev
+      const next = new Set(prev)
+      next.delete(id)
       return next
     })
   }
@@ -155,7 +358,7 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, filtersOpen = fal
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col pl-4 pr-4">
 
       <TableFiltersModal
         open={filtersOpen}
@@ -292,8 +495,16 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, filtersOpen = fal
         </div>
       </TableFiltersModal>
 
-      <div className={`flex-1 min-h-0 overflow-auto ${mode === 'collapsed' ? 'px-0 overflow-x-hidden' : 'px-4'}`}>
-        <table className="w-full border-collapse">
+      <div className={`flex-1 min-h-0 overflow-auto ${mode === 'collapsed' ? 'overflow-x-hidden' : ''}`}>
+        <table className="w-full border-collapse" style={{ tableLayout: mode === 'collapsed' ? 'auto' : 'fixed' }}>
+          {mode !== 'collapsed' && (
+            <colgroup>
+              <col className="w-10" />
+              {visibleCols.map((col) => (
+                <col key={col} style={col === 'name' ? { width: nameColWidth } : undefined} className={col === 'name' ? undefined : 'w-28'} />
+              ))}
+            </colgroup>
+          )}
           {mode !== 'collapsed' && (
             <thead>
               <tr>
@@ -309,8 +520,14 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, filtersOpen = fal
                   })()}
                 </th>
                 {visibleCols.map((col) => (
-                  <th key={col} className={`h-9 px-2 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider sticky top-0 bg-white dark:bg-[#1e1e1e] ${col === 'name' ? '' : 'w-28'}`}>
+                  <th key={col} className={`relative h-9 px-2 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider sticky top-0 bg-white dark:bg-[#1e1e1e] whitespace-nowrap overflow-hidden text-ellipsis ${col === 'name' ? '' : 'w-28'}`}>
                     {colDefs.find((d) => d.key === col)?.label}
+                    {col === 'name' && (
+                      <div
+                        onMouseDown={(e) => { e.preventDefault(); setResizingNameCol(true) }}
+                        className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-gray-300 dark:hover:bg-white/20 transition-colors"
+                      />
+                    )}
                   </th>
                 ))}
               </tr>
@@ -332,12 +549,13 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, filtersOpen = fal
             ) : (
               filtered.map((row) => {
                 const isActive = row.id === activeId
+                const isFlickering = row.id === flickerId
                 return (
                   <tr
                     key={row.id}
                     onClick={() => handleRowClick(row.id)}
                     title={mode === 'collapsed' ? row.name : undefined}
-                    className={`border-b border-gray-100 dark:border-white/5 transition-colors duration-100 cursor-pointer ${isActive ? '' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                    className={`border-b border-gray-100 dark:border-white/5 cursor-pointer transition-colors duration-500 ${isActive ? '' : isFlickering ? 'bg-gray-50 dark:bg-white/5' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
                     style={isActive ? { backgroundColor: 'color-mix(in srgb, var(--accent) 8%, transparent)' } : {}}
                   >
                     {mode === 'collapsed' ? (
@@ -345,11 +563,25 @@ const SdsTable: React.FC<SdsTableProps> = ({ tabResizer = 400, filtersOpen = fal
                         <Status code={row.status} form="dot" className="mx-auto" />
                       </td>
                     ) : (<>
-                      <td className="w-10 px-3 py-2.5 align-middle">
-                        <svg className="w-5 h-5 cursor-pointer transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" onClick={(e) => toggleSelect(e, row.id)}>
-                          <rect x="3" y="3" width="18" height="18" rx="2" className={selected.has(row.id) ? '' : 'fill-none stroke-gray-300 hover:stroke-gray-400'} style={selected.has(row.id) ? { fill: 'var(--accent)', stroke: 'var(--accent)' } : {}} />
-                          {selected.has(row.id) && <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" stroke="white" strokeWidth="2.5" />}
-                        </svg>
+                      <td className="w-10 px-3 py-2.5 align-middle" onClick={(e) => e.stopPropagation()}>
+                        {parsingIds.has(row.id) ? (
+                          <Checkbox state="progress" />
+                        ) : (
+                          <Checkbox
+                            state={
+                              parseErrorIds.has(row.id)
+                                ? 'error'
+                                : parseAttentionIds.has(row.id)
+                                ? 'attention'
+                                : parseSuccessIds.has(row.id)
+                                ? 'success'
+                                : selected.has(row.id)
+                                ? 'checked'
+                                : 'unchecked'
+                            }
+                            onClick={() => toggleSelect(row.id)}
+                          />
+                        )}
                       </td>
                       {visibleCols.map((col) => (
                         <td key={col} className="px-2 py-2.5 align-middle">

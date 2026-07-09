@@ -56,6 +56,10 @@ const panelConfigs: PanelConfig[] = [
 
 const Layout: React.FC = () => {
   const [_, toastClick] = useStateStore('toastEdit');
+  const [__, pingSdsParse] = useStateStore('sdsParseTrigger');
+  const [___, pingSdsParseStop] = useStateStore('sdsParseStop');
+  const [sdsParseRunning] = useStateStore('sdsParseRunning');
+  const isSdsParsing = sdsParseRunning?.running === true;
   const [resizing, setResizing] = useState<number | null>(null);
   const layoutRef = useRef<HTMLDivElement>(null);
 
@@ -216,19 +220,20 @@ const Layout: React.FC = () => {
         header={
           isSds ? (
             <div className="flex items-center gap-2 w-full mr-2">
-              <div className="flex-1 flex items-center flex-wrap gap-1.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 focus-within:border-gray-300 dark:focus-within:border-white/20 transition-colors">
+              <div className="flex-1 h-10 flex items-center flex-wrap gap-1.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-2 pr-3 focus-within:border-gray-300 dark:focus-within:border-white/20 transition-colors">
                 {/* <svg className="w-4 h-4 text-gray-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeLinecap="round" />
                 </svg> */}
                 {packageTag && (
-                  <Chip iconNode={<PackageIcon className="w-3.5 h-3.5" />} label={packageTag} onClick={() => setPackagePickerOpen(true)} />
+                  <Chip iconNode={<PackageIcon className="w-3.5 h-3.5" />} label={packageTag} onClick={() => setPackagePickerOpen(true)} onRemove={removePackageTag} className="!h-7 !py-0 !rounded-md" />
                 )}
                 {!packageTag && (
                   <button
                     onClick={() => setPackagePickerOpen(true)}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 border border-dashed border-gray-300 dark:border-white/15"
+                    title="Add package"
+                    className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 border border-dashed border-gray-300 dark:border-white/15 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer transition-colors"
                   >
-                    + Package
+                    <PackageIcon className="w-3.5 h-3.5" />
                   </button>
                 )}
                 <input
@@ -248,7 +253,20 @@ const Layout: React.FC = () => {
                 </button>
               </div>
               {sdsSelected > 0 && (
-                <button onClick={() => setEditOpen(true)} className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-white transition-colors" style={{ backgroundColor: 'var(--accent)' }}>
+                isSdsParsing ? (
+                  <button onClick={() => pingSdsParseStop({ ts: Date.now() })} className="flex-shrink-0 h-8 flex items-center gap-1.5 px-2.5 rounded-md text-xs font-medium text-white bg-red-500 hover:bg-red-600 transition-colors">
+                    <Icon icon="mdi:stop" width={14} height={14} />
+                    Stop
+                  </button>
+                ) : (
+                  <button onClick={() => pingSdsParse({ ts: Date.now() })} className="flex-shrink-0 h-8 flex items-center gap-1.5 px-2.5 rounded-md text-xs font-medium text-white bg-yellow-700 hover:bg-yellow-800 transition-colors">
+                    <Icon icon="mdi:file-search-outline" width={14} height={14} />
+                    Parse
+                  </button>
+                )
+              )}
+              {sdsSelected > 0 && (
+                <button onClick={() => setEditOpen(true)} className="flex-shrink-0 h-8 flex items-center gap-1.5 px-2.5 rounded-md text-xs font-medium text-white transition-colors" style={{ backgroundColor: 'var(--accent)' }}>
                   <Icon icon="mdi:pencil-outline" width={14} height={14} />
                   Edit ({sdsSelected})
                 </button>

@@ -102,7 +102,7 @@ export const Panel: React.FC<PanelProps> = ({
       {/* Header */}
       {(header !== undefined || closable) && (
         <div
-          className={`flex items-center w-full px-5 min-h-[58px] bg-white dark:bg-[#1f1f1f] sticky top-0 z-[2] transition-shadow duration-200
+          className={`flex items-center w-full px-3 min-h-[58px] bg-white dark:bg-[#1f1f1f] sticky top-0 z-[2] transition-shadow duration-200
             ${effectiveCollapsed ? 'justify-center px-0' : ''}`}
           style={{ boxShadow: scrolled ? "0 2px 10px rgba(0,0,0,0.1)" : "none" }}
         >
