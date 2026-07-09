@@ -7,8 +7,14 @@ export interface MockTenantUploadState {
   uploadFailReason?: string
 }
 
-export const getMockTenantUploadState = (tenantId: number): MockTenantUploadState => {
-  switch (tenantId % 4) {
+const hashString = (value: string): number => {
+  let hash = 0
+  for (let i = 0; i < value.length; i++) hash = (hash * 31 + value.charCodeAt(i)) | 0
+  return Math.abs(hash)
+}
+
+export const getMockTenantUploadState = (tenantId: string): MockTenantUploadState => {
+  switch (hashString(tenantId) % 4) {
     case 0: return { uploadedAt: '2026-01-01' } // up to date
     case 1: return { uploadedAt: '2024-01-01' } // outdated
     case 2: return {} // never uploaded

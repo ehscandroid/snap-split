@@ -11,6 +11,7 @@ export { ToggleSwitch } from './ToggleSwitch';
 export { ToggleRow } from './ToggleRow';
 export { FileUpload } from './FileUpload';
 export { HintText } from './HintText';
+export { HintField } from './HintField';
 export { ImageSlider } from './ImageSlider';
 export { SegmentedControl } from './SegmentedControl';
 export { Title, SectionTitle, CardTitle, Label } from './Title';

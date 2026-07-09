@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import useArrowNavigation from '../hooks/useArrowNavigation'
 import { useTenants } from '../hooks/useTenants'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
-import { TENANT_STATUSES } from '../data/mockTenants'
+import { SortableHeader } from './SortableHeader'
+import { TENANT_STATUSES, type TenantRecord } from '../data/mockTenants'
 
 const chipColors: Record<string, string> = {
   blue:   'bg-blue-50   text-blue-600   dark:bg-blue-500/10   dark:text-blue-400',
@@ -20,6 +21,8 @@ const dotColors: Record<string, string> = {
 }
 
 type Mode = 'collapsed' | 'narrow' | 'full'
+type SortColumn = 'name' | 'customer' | 'remark' | 'status'
+type SortDirection = 'asc' | 'desc'
 
 const COLLAPSE_WIDTH = parseInt(import.meta.env.VITE_PANEL_COLLAPSE_WIDTH) || 40
 const NARROW_WIDTH   = parseInt(import.meta.env.VITE_TABLE_NARROW_WIDTH)   || 280
@@ -32,7 +35,7 @@ const getMode = (width: number): Mode => {
 
 interface TenantsTableProps {
   tabResizer?: number
-  onRowClick: (id: number) => void
+  onRowClick: (id: string) => void
   onAdd?: () => void
 }
 
@@ -41,21 +44,42 @@ const TenantsTable: React.FC<TenantsTableProps> = ({ tabResizer = 400, onRowClic
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300)
   const [mode, setMode] = useState<Mode>(() => getMode(tabResizer))
+  const [sortColumn, setSortColumn] = useState<SortColumn>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const { tenants } = useTenants()
 
   useEffect(() => { setMode(getMode(tabResizer)) }, [tabResizer])
 
-  const activeId = searchParams.get('id') ? Number(searchParams.get('id')) : null
+  const activeId = searchParams.get('id')
+
+  const toggleSort = (column: SortColumn) => {
+    if (column === sortColumn) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
+  const sortValue = (row: TenantRecord, column: SortColumn): string => {
+    if (column === 'status') return TENANT_STATUSES[row.status]?.title ?? ''
+    return row[column]
+  }
 
   // TODO: once paginated, replace this client-side filter with a backend query using debouncedSearchTerm
   const filtered = debouncedSearchTerm
     ? tenants.filter((row) =>
         row.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        row.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+        row.customer.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
       )
     : tenants
 
-  useArrowNavigation(filtered)
+  const sorted = [...filtered].sort((a, b) => {
+    const cmp = sortValue(a, sortColumn).localeCompare(sortValue(b, sortColumn))
+    return sortDirection === 'asc' ? cmp : -cmp
+  })
+
+  useArrowNavigation(sorted)
 
   return (
     <div className="h-full flex flex-col">
@@ -97,25 +121,22 @@ const TenantsTable: React.FC<TenantsTableProps> = ({ tabResizer = 400, onRowClic
           {mode !== 'collapsed' && (
             <thead>
               <tr>
-                <th className="h-9 px-2 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider sticky top-0 bg-white dark:bg-[#1e1e1e]">
-                  Name
-                </th>
+                <SortableHeader column="name" label="Name" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} />
                 {mode === 'full' && (
-                  <th className="h-9 px-2 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider sticky top-0 bg-white dark:bg-[#1e1e1e]">
-                    Email
-                  </th>
+                  <>
+                    <SortableHeader column="customer" label="Customer" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} />
+                    <SortableHeader column="remark" label="Remark" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} />
+                  </>
                 )}
-                <th className="h-9 px-2 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider sticky top-0 bg-white dark:bg-[#1e1e1e] w-28">
-                  Status
-                </th>
+                <SortableHeader column="status" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} className="w-28" />
               </tr>
-              <tr><td colSpan={mode === 'full' ? 3 : 2} className="h-px bg-gray-100 dark:bg-white/5 p-0 sticky top-9" /></tr>
+              <tr><td colSpan={mode === 'full' ? 4 : 2} className="h-px bg-gray-100 dark:bg-white/5 p-0 sticky top-9" /></tr>
             </thead>
           )}
           <tbody>
-            {filtered.length === 0 ? (
+            {sorted.length === 0 ? (
               <tr>
-                <td colSpan={3} className="py-16 text-center">
+                <td colSpan={4} className="py-16 text-center">
                   <div className="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
                     <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
@@ -125,7 +146,7 @@ const TenantsTable: React.FC<TenantsTableProps> = ({ tabResizer = 400, onRowClic
                 </td>
               </tr>
             ) : (
-              filtered.map((row) => {
+              sorted.map((row) => {
                 const isActive = row.id === activeId
                 const status = TENANT_STATUSES[row.status] ?? TENANT_STATUSES[0]
                 return (
@@ -148,15 +169,20 @@ const TenantsTable: React.FC<TenantsTableProps> = ({ tabResizer = 400, onRowClic
                             {row.name}
                           </span>
                           {mode === 'narrow' && (
-                            <span className="text-xs text-gray-400 dark:text-gray-500 line-clamp-1">{row.email}</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500 line-clamp-1">{row.customer}</span>
                           )}
                         </div>
                       )}
                     </td>
                     {mode === 'full' && (
-                      <td className="px-2 py-2.5 align-middle">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{row.email}</span>
-                      </td>
+                      <>
+                        <td className="px-2 py-2.5 align-middle">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{row.customer}</span>
+                        </td>
+                        <td className="px-2 py-2.5 align-middle">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{row.remark || '—'}</span>
+                        </td>
+                      </>
                     )}
                     {mode !== 'collapsed' && (
                       <td className="px-2 py-2.5 align-middle">
@@ -176,7 +202,7 @@ const TenantsTable: React.FC<TenantsTableProps> = ({ tabResizer = 400, onRowClic
       {mode !== 'collapsed' && (
         <div className="flex-shrink-0 flex items-center px-3 h-8 bg-gray-50 dark:bg-white/[0.02] border-t border-gray-100 dark:border-white/5">
           <span className="text-[11px] text-gray-400 dark:text-gray-500">
-            {filtered.length} of {tenants.length}
+            {sorted.length} of {tenants.length}
           </span>
         </div>
       )}

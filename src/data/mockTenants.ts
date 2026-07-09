@@ -1,12 +1,14 @@
 export interface TenantRecord {
-  id: number
+  id: string
   name: string
   email: string
-  plan: string
+  customer: string
+  remark: string
+  filter: string
   status: number
   createdAt: string
-  seats: number
-  region: string
+  noUpdateFields: string[]
+  noImportFields: string[]
 }
 
 export const TENANT_STATUSES: Record<number, { title: string; color: string }> = {
@@ -16,17 +18,16 @@ export const TENANT_STATUSES: Record<number, { title: string; color: string }> =
   3: { title: 'Pending',   color: 'yellow' },
 }
 
-export const TENANT_PLANS = ['Starter', 'Pro', 'Enterprise']
-export const TENANT_REGIONS = ['US', 'EU', 'APAC']
+export const DEFAULT_TENANT_FILTER = JSON.stringify({ region: 'EU', category: 'flammable', extended: true })
 
 // TODO: replace with real tenant data
 export const MOCK_TENANTS: TenantRecord[] = [
-  { id: 1, name: 'Acme Corp',      email: 'admin@acme.com',     plan: 'Enterprise', status: 0, createdAt: '2023-01-12', seats: 120, region: 'EU'   },
-  { id: 2, name: 'Globex Inc',     email: 'it@globex.com',      plan: 'Pro',        status: 1, createdAt: '2024-03-05', seats: 25,  region: 'US'   },
-  { id: 3, name: 'Initech',        email: 'ops@initech.com',    plan: 'Starter',    status: 3, createdAt: '2024-06-18', seats: 5,   region: 'US'   },
-  { id: 4, name: 'Umbrella Ltd',   email: 'admin@umbrella.com', plan: 'Enterprise', status: 2, createdAt: '2022-11-30', seats: 200, region: 'EU'   },
-  { id: 5, name: 'Hooli',          email: 'dev@hooli.com',      plan: 'Pro',        status: 0, createdAt: '2023-08-22', seats: 40,  region: 'US'   },
-  { id: 6, name: 'Pied Piper',     email: 'richard@pp.com',     plan: 'Starter',    status: 1, createdAt: '2024-09-01', seats: 8,   region: 'US'   },
-  { id: 7, name: 'Dunder Mifflin', email: 'michael@dm.com',     plan: 'Pro',        status: 0, createdAt: '2023-04-17', seats: 30,  region: 'EU'   },
-  { id: 8, name: 'Vandelay Ind.',  email: 'art@vandelay.com',   plan: 'Enterprise', status: 3, createdAt: '2024-10-03', seats: 75,  region: 'APAC' },
+  { id: 'a1b1c1d1-0001-4000-8000-000000000001', name: 'Acme Corp',      email: 'admin@acme.com',     customer: 'Acme Corp',      remark: '',                        filter: DEFAULT_TENANT_FILTER, status: 0, createdAt: '2023-01-12', noUpdateFields: [], noImportFields: [] },
+  { id: 'a1b1c1d1-0002-4000-8000-000000000002', name: 'Globex Inc',     email: 'it@globex.com',      customer: 'Globex Inc',     remark: '',                        filter: DEFAULT_TENANT_FILTER, status: 1, createdAt: '2024-03-05', noUpdateFields: [], noImportFields: [] },
+  { id: 'a1b1c1d1-0003-4000-8000-000000000003', name: 'Initech',        email: 'ops@initech.com',    customer: 'Initech',        remark: 'Trial extended once',     filter: DEFAULT_TENANT_FILTER, status: 3, createdAt: '2024-06-18', noUpdateFields: [], noImportFields: [] },
+  { id: 'a1b1c1d1-0004-4000-8000-000000000004', name: 'Umbrella Ltd',   email: 'admin@umbrella.com', customer: 'Umbrella Ltd',   remark: 'Suspended for non-payment', filter: DEFAULT_TENANT_FILTER, status: 2, createdAt: '2022-11-30', noUpdateFields: [], noImportFields: [] },
+  { id: 'a1b1c1d1-0005-4000-8000-000000000005', name: 'Hooli',          email: 'dev@hooli.com',      customer: 'Hooli',          remark: '',                        filter: DEFAULT_TENANT_FILTER, status: 0, createdAt: '2023-08-22', noUpdateFields: [], noImportFields: [] },
+  { id: 'a1b1c1d1-0006-4000-8000-000000000006', name: 'Pied Piper',     email: 'richard@pp.com',     customer: 'Pied Piper',     remark: '',                        filter: DEFAULT_TENANT_FILTER, status: 1, createdAt: '2024-09-01', noUpdateFields: [], noImportFields: [] },
+  { id: 'a1b1c1d1-0007-4000-8000-000000000007', name: 'Dunder Mifflin', email: 'michael@dm.com',     customer: 'Dunder Mifflin', remark: '',                        filter: DEFAULT_TENANT_FILTER, status: 0, createdAt: '2023-04-17', noUpdateFields: [], noImportFields: [] },
+  { id: 'a1b1c1d1-0008-4000-8000-000000000008', name: 'Vandelay Ind.',  email: 'art@vandelay.com',   customer: 'Vandelay Ind.',  remark: '',                        filter: DEFAULT_TENANT_FILTER, status: 3, createdAt: '2024-10-03', noUpdateFields: [], noImportFields: [] },
 ]
