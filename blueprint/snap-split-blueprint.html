@@ -1,0 +1,666 @@
+<title>Snap-Split — Reconstruction Blueprint</title>
+<style>
+  :root {
+    --paper: #f6f4ef;
+    --paper-raised: #ffffff;
+    --ink: #2a2823;
+    --ink-soft: #5c584e;
+    --hairline: #ddd8cc;
+    --accent: #3d5a80;
+    --accent-soft: #e6ebf1;
+    --code-bg: #eeece3;
+    --status-bg: #efe9d8;
+  }
+  :root[data-theme="dark"] {
+    --paper: #1c1b19;
+    --paper-raised: #242220;
+    --ink: #e8e4d9;
+    --ink-soft: #a39d8d;
+    --hairline: #3a362f;
+    --accent: #8fb0d6;
+    --accent-soft: #2a3540;
+    --code-bg: #2a2723;
+    --status-bg: #2d2a22;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1c1b19;
+      --paper-raised: #242220;
+      --ink: #e8e4d9;
+      --ink-soft: #a39d8d;
+      --hairline: #3a362f;
+      --accent: #8fb0d6;
+      --accent-soft: #2a3540;
+      --code-bg: #2a2723;
+      --status-bg: #2d2a22;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1.55;
+  }
+  ::selection { background: var(--accent-soft); }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  /* ---- Sidebar ---- */
+  nav.toc {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 2.5rem 1.5rem 2rem 2rem;
+    border-right: 1px solid var(--hairline);
+  }
+  .toc-brand {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 1.75rem;
+  }
+  .toc-brand strong {
+    display: block;
+    font-family: Georgia, serif;
+    font-size: 1.05rem;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink);
+    margin-top: 0.25rem;
+  }
+  .toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: toc;
+  }
+  .toc li {
+    counter-increment: toc;
+    margin-bottom: 0.65rem;
+  }
+  .toc a {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+    display: flex;
+    gap: 0.55rem;
+    border-radius: 4px;
+    padding: 0.15rem 0.3rem;
+    margin-left: -0.3rem;
+  }
+  .toc a::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: 'Courier New', monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    opacity: 0.7;
+    padding-top: 0.1rem;
+  }
+  .toc a:hover, .toc a:focus-visible {
+    color: var(--ink);
+    background: var(--accent-soft);
+    outline: none;
+  }
+  .toc-meta {
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--hairline);
+    font-family: 'Courier New', monospace;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    line-height: 1.8;
+  }
+
+  /* ---- Main content ---- */
+  main {
+    padding: 3rem 3.5rem 6rem;
+    min-width: 0;
+  }
+  header.doc-head {
+    margin-bottom: 3rem;
+  }
+  .kicker {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.6rem;
+  }
+  h1 {
+    font-size: 2.4rem;
+    margin: 0 0 0.6rem;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .doc-head p.lede {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 1.02rem;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  section {
+    max-width: 70ch;
+    margin: 0 0 3.25rem;
+    scroll-margin-top: 2rem;
+  }
+  section.wide { max-width: none; }
+
+  h2 {
+    font-size: 1.5rem;
+    margin: 0 0 1.1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--hairline);
+    letter-spacing: -0.005em;
+  }
+  h3 {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 1.8rem 0 0.75rem;
+  }
+  p { margin: 0 0 1rem; }
+  section.wide p { max-width: 70ch; }
+
+  code, .mono {
+    font-family: 'Courier New', monospace;
+    font-size: 0.86em;
+  }
+  code {
+    background: var(--code-bg);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+  }
+
+  a { color: var(--accent); }
+
+  /* ---- Tables ---- */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    margin: 0 0 1.25rem;
+    background: var(--paper-raised);
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 0.86rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--hairline);
+    white-space: nowrap;
+  }
+  th {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    background: var(--accent-soft);
+  }
+  tr:last-child td { border-bottom: none; }
+  td code { white-space: normal; }
+  td.wrap, th.wrap { white-space: normal; }
+
+  /* swatch chip in the accent-palette table */
+  .swatch {
+    display: inline-block;
+    width: 0.85em;
+    height: 0.85em;
+    border-radius: 3px;
+    margin-right: 0.45em;
+    vertical-align: -0.05em;
+    border: 1px solid rgba(0,0,0,0.15);
+  }
+
+  /* ---- Callouts / gap notes ---- */
+  .note {
+    background: var(--status-bg);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    padding: 0.85rem 1.1rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    margin: 0 0 1.25rem;
+  }
+  .note strong { color: var(--ink); }
+
+  /* ---- ASCII mocks ---- */
+  .mock-wrap {
+    overflow-x: auto;
+    background: var(--code-bg);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 1.1rem 1.3rem;
+    margin: 0 0 0.6rem;
+  }
+  .mock-wrap pre {
+    margin: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.78rem;
+    line-height: 1.35;
+    white-space: pre;
+  }
+  .mock-caption {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    margin: 0 0 1.75rem;
+  }
+
+  /* ---- Checklist ---- */
+  ol.checklist {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+  }
+  ol.checklist li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 2.1rem 1fr;
+    gap: 0.9rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  ol.checklist li:last-child { border-bottom: none; }
+  ol.checklist li::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    padding-top: 0.15rem;
+  }
+  ol.checklist strong {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  /* ---- Gaps list ---- */
+  .gap-list {
+    margin: 0;
+    padding-left: 1.2rem;
+  }
+  .gap-list li { margin-bottom: 0.7rem; }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    nav.toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--hairline); }
+    main { padding: 2rem 1.25rem 4rem; }
+  }
+</style>
+
+<div class="shell">
+  <nav class="toc">
+    <div class="toc-brand">Blueprint / no-repo-access edition<strong>Snap&#8209;Split</strong></div>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#tokens">Design tokens</a></li>
+      <li><a href="#shell">Layout &amp; shell</a></li>
+      <li><a href="#inventory">Component inventory</a></li>
+      <li><a href="#data">Data model</a></li>
+      <li><a href="#mocks">UI mocks</a></li>
+      <li><a href="#checklist">Rebuild checklist</a></li>
+      <li><a href="#gaps">Gaps</a></li>
+    </ol>
+    <div class="toc-meta">
+      react 18 · vite 5<br>
+      tailwind v4 · ts 5.6<br>
+      337 source lines audited
+    </div>
+  </nav>
+
+  <main>
+    <header class="doc-head">
+      <div class="kicker">Reconstruction blueprint</div>
+      <h1>Rebuilding Snap&#8209;Split from spec alone</h1>
+      <p class="lede">A portable reference for a Claude instance with no access to this repository — component inventory, design tokens, and rough layout mocks, pulled from the real source rather than invented.</p>
+    </header>
+
+    <section id="overview">
+      <h2>1 · Overview</h2>
+      <p><strong>What it is.</strong> The BildWert.com "mother repo" — a component library and showcase app. It hosts the canonical <code>Button</code> and <code>FormElements</code> families later copied into sibling project repos, plus a working domain demo (SDS / chemical safety-data-sheet management: SDS records, Tenants, Packages) built on a resizable three-panel "split view" shell.</p>
+
+      <h3>Stack</h3>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr><td>Core</td><td class="wrap">React 18 + Vite 5, TypeScript ~5.6</td></tr>
+            <tr><td>Styling</td><td class="wrap">Tailwind CSS v4 via <code>@tailwindcss/vite</code> — CSS-first, no <code>tailwind.config.js</code></td></tr>
+            <tr><td>Routing</td><td class="wrap"><code>react-router-dom</code> v6, <code>BrowserRouter</code></td></tr>
+            <tr><td>Global state</td><td class="wrap"><code>mgsmu-react</code> (<code>useStateStore</code>) — toast trigger, SDS parse-job signals</td></tr>
+            <tr><td>Icons</td><td class="wrap"><code>@iconify/react</code> + <code>@iconify-json/mdi</code>, referenced as <code>"mdi:icon-name"</code> strings</td></tr>
+            <tr><td>Flags</td><td class="wrap"><code>flag-icons</code> package + custom <code>FlagIcon</code> wrapper</td></tr>
+            <tr><td>Unverified dep</td><td class="wrap"><code>react-swipeable</code> is listed but not observed in any sampled file</td></tr>
+            <tr><td>Tooling</td><td class="wrap">pnpm · no test framework · <code>build</code> = <code>tsc --noEmit &amp;&amp; vite build</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Routing map</h3>
+      <p><code>src/App.tsx</code> — every route below sits under one <code>&lt;Layout /&gt;</code>; <code>main.tsx</code> wraps <code>&lt;App /&gt;</code> in <code>&lt;ThemeProvider&gt;&lt;AccentProvider&gt;</code>.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Path</th><th>Element</th></tr></thead>
+          <tbody>
+            <tr><td><code>/</code></td><td>placeholder — "Select a page"</td></tr>
+            <tr><td><code>/form/:id</code>, <code>/form</code></td><td><code>Form</code> page</td></tr>
+            <tr><td><code>/buttons</code></td><td><code>Buttons</code> showcase</td></tr>
+            <tr><td><code>/sds</code></td><td><code>Sds</code> detail page</td></tr>
+            <tr><td><code>/tenants</code></td><td><code>Tenants</code> page</td></tr>
+            <tr><td><code>/statuses</code></td><td><code>Statuses</code> showcase</td></tr>
+            <tr><td><code>/chips</code></td><td><code>Chips</code> showcase</td></tr>
+            <tr><td><code>/packages</code></td><td><code>Packages</code> page</td></tr>
+            <tr><td><code>/fullview</code></td><td>placeholder</td></tr>
+            <tr><td><code>*</code></td><td>404 placeholder</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tokens">
+      <h2>2 · Design tokens</h2>
+
+      <h3>Theme (light/dark)</h3>
+      <p>Class-based via <code>.dark</code> on <code>&lt;html&gt;</code>, toggled by <code>ThemeContext</code> (<code>useTheme</code>), persisted to <code>localStorage['app-theme']</code>, defaults to <code>prefers-color-scheme</code>. Tailwind v4 custom variant: <code>@custom-variant dark (&amp;:where(.dark, .dark *));</code></p>
+
+      <h3>Accent color</h3>
+      <p><code>AccentContext</code> (<code>useAccent</code>) — 7 named colors, persisted to <code>localStorage['app-accent']</code>, applied as <code>--accent</code> / <code>--accent-hover</code> CSS custom properties on <code>document.documentElement</code>. Consumed via inline <code>style</code> or <code>color-mix(in srgb, var(--accent) N%, transparent)</code> — never a Tailwind color class, so it can react at runtime.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>id</th><th>value</th><th>hover</th></tr></thead>
+          <tbody>
+            <tr><td>blue <span class="mono" style="color:var(--ink-soft)">(default)</span></td><td><span class="swatch" style="background:#3b82f6"></span><code>#3b82f6</code></td><td><code>#2563eb</code></td></tr>
+            <tr><td>violet</td><td><span class="swatch" style="background:#7c3aed"></span><code>#7c3aed</code></td><td><code>#6d28d9</code></td></tr>
+            <tr><td>rose</td><td><span class="swatch" style="background:#f43f5e"></span><code>#f43f5e</code></td><td><code>#e11d48</code></td></tr>
+            <tr><td>emerald</td><td><span class="swatch" style="background:#10b981"></span><code>#10b981</code></td><td><code>#059669</code></td></tr>
+            <tr><td>amber</td><td><span class="swatch" style="background:#f59e0b"></span><code>#f59e0b</code></td><td><code>#d97706</code></td></tr>
+            <tr><td>cyan</td><td><span class="swatch" style="background:#06b6d4"></span><code>#06b6d4</code></td><td><code>#0891b2</code></td></tr>
+            <tr><td>slate</td><td><span class="swatch" style="background:#64748b"></span><code>#64748b</code></td><td><code>#475569</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Base surfaces</h3>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr><td>App background</td><td class="wrap"><code>#eaedf1</code> light / <code>#111</code> dark</td></tr>
+            <tr><td>Panel / card surface</td><td class="wrap"><code>white</code> / <code>#1e1e1e</code> dark · border <code>#eef1f5</code> / <code>white/10</code></td></tr>
+            <tr><td>Headline text</td><td class="wrap"><code>#0f172a</code> light / <code>gray-100</code> dark · tracking &minus;0.01 to &minus;0.02em</td></tr>
+            <tr><td>Secondary text</td><td class="wrap"><code>#64748b</code> / <code>gray-400</code> dark</td></tr>
+            <tr><td>Panel shadow</td><td class="wrap"><code>shadow-[0_1px_2px_rgba(15,23,42,.04),0_16px_32px_-22px_rgba(15,23,42,.16)]</code></td></tr>
+            <tr><td>Radius</td><td class="wrap"><code>rounded-lg</code> buttons/inputs · <code>rounded-xl</code>/<code>2xl</code> panels/modals · <code>rounded-full</code> pills</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note"><strong>Font unresolved.</strong> <code>app.css</code> references <code>var(--font-primary)</code> but it's never defined in any sampled file. Ask the user, or default to a system stack when rebuilding.</div>
+
+      <h3>Global CSS quirks worth replicating</h3>
+      <p>Custom thin scrollbar (webkit + <code>scrollbar-width: thin</code>) · global <code>user-select: none</code> on <code>*</code>, re-enabled for <code>input, textarea</code> · a stray <code>h3 { margin-top: 10px }</code>.</p>
+    </section>
+
+    <section id="shell" class="wide">
+      <h2>3 · Layout &amp; shell</h2>
+      <div style="max-width:70ch">
+      <p><strong>Three-panel "split view"</strong> (<code>splitview/Layout.tsx</code> + <code>splitview/Panel.tsx</code>): outer flex row, <code>h-screen w-screen</code>, <code>p-4 gap-4</code>. Panel widths persist per-panel to <code>localStorage</code>. Each panel is a rounded-2xl bordered card — sticky header (shadow appears on scroll), scrollable body, optional sticky footer, draggable right-edge resize handle. Below <code>collapseWidth</code> (default 40px) a panel auto-collapses to icon-only; can also be toggled manually when <code>closable</code>.</p>
+
+      <h3>The three panels, left → right</h3>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Panel</th><th class="wrap">Contents</th></tr></thead>
+          <tbody>
+            <tr><td>1 · Nav<br><span class="mono" style="color:var(--ink-soft)">~200px</span></td><td class="wrap">Logo header, footer with Profile/Settings, grouped <code>NavItem</code>s under <code>NavDivider</code> labels: <em>HazChem</em> (SDS, Packages, Tenants), <em>Components</em> (Home, Statuses, Chips, Form, Buttons, Full View), <em>Favorites</em> (dynamic)</td></tr>
+            <tr><td>2 · List<br><span class="mono" style="color:var(--ink-soft)">~200&ndash;900px</span></td><td class="wrap">Hidden entirely on <code>/fullview /tenants /statuses /chips /packages</code>. On <code>/sds</code> the header becomes a search bar + tag chip + parse/edit actions; otherwise "Items" title + Columns button. Body: <code>SdsTable</code> or generic <code>Table</code>.</td></tr>
+            <tr><td>3 · Detail<br><span class="mono" style="color:var(--ink-soft)">fills remainder</span></td><td class="wrap"><code>&lt;Outlet context={{ detailWidth }}/&gt;</code>. Header suppressed on <code>/sds</code> (page renders its own); otherwise a <code>DetailHeader</code> with icon/title/subtitle/flag + <code>SplitButton</code> row.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="max-width:70ch">
+      <p>On <code>/tenants /statuses /chips /packages</code>: panel 2 collapses away entirely and a single fill panel (no padding, no handle) renders the <code>&lt;Outlet&gt;</code> directly — full-bleed single-panel views, not master-detail.</p>
+      <p>Global modals mounted at Layout level: <code>SdsEditModal</code>, <code>PackagePickerModal</code>, <code>ToastSimple</code> (driven by the <code>mgsmu-react</code> <code>toastEdit</code> key).</p>
+      <p><strong>Nav item pattern:</strong> icon + label row, <code>rounded-[10px]</code>; active state is a 10%-alpha accent background with accent-colored text; collapses to icon-only + tooltip when the nav panel narrows below 120px.</p>
+      </div>
+    </section>
+
+    <section id="inventory" class="wide">
+      <h2>4 · Component inventory</h2>
+
+      <h3>Button family — <code>components/Button/</code></h3>
+      <p style="max-width:70ch">Shared vocabulary: <code>variant: 'primary'|'secondary'|'danger'|'success'|'warning'|'ghost'|'outline'</code>, <code>size: 'sm'|'md'|'lg'</code>. <code>primary</code> always uses <code>var(--accent)</code> via inline style + mouseenter/leave handlers — a CSS var can't be targeted by a Tailwind <code>:hover</code> class.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th class="wrap">Key props</th><th class="wrap">Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>Button</code></td><td class="wrap"><code>variant, size, loading, leftIcon, rightIcon</code></td><td class="wrap"><code>loading</code> swaps children for a spinning ring</td></tr>
+            <tr><td><code>TextButton</code></td><td class="wrap"><code>variant: default|primary|danger</code></td><td class="wrap">Plain hover-bg, no accent var</td></tr>
+            <tr><td><code>IconButton</code></td><td class="wrap"><code>icon, size, variant</code></td><td class="wrap">Fixed square sizes (6/8/10)</td></tr>
+            <tr><td><code>CheckboxButton</code></td><td class="wrap"><code>label, checked?, onChange?, variant</code></td><td class="wrap">Controlled/uncontrolled dual mode</td></tr>
+            <tr><td><code>DownloadButton</code></td><td class="wrap"><code>label, downloadingText, duration, onClick</code></td><td class="wrap"><code>requestAnimationFrame</code> progress fill, absolutely-positioned inset div</td></tr>
+            <tr><td><code>SplitButton</code></td><td class="wrap"><code>label, options[], variant, size</code></td><td class="wrap">Primary action + dropdown; closes on outside click, arrow rotates 180°</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Form elements — <code>components/FormElements/</code></h3>
+      <p style="max-width:70ch">Common shape: <code>label</code>, controlled <code>value</code>/<code>onChange(value)</code>, optional <code>required</code>, <code>disabled</code>, <code>error</code>.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th class="wrap">Distinct behavior</th></tr></thead>
+          <tbody>
+            <tr><td><code>TextInput</code></td><td class="wrap"><code>variant: outlined|underlined</code>, clear (✕) button, maxLength counter</td></tr>
+            <tr><td><code>FloatingInput</code></td><td class="wrap">Material-style label animates to top-left on focus/fill</td></tr>
+            <tr><td><code>DatePicker</code></td><td class="wrap">3-zone control (label chip / text field / icon button) opening a modal with native <code>&lt;input type="date"&gt;</code></td></tr>
+            <tr><td><code>DropdownSelect</code></td><td class="wrap">Same 3-zone shape, opens a modal list of <code>options: string[]</code>, Cancel/Select footer</td></tr>
+            <tr><td><code>ToggleSwitch</code></td><td class="wrap">Bordered row, <code>w-12 h-6</code> track, <code>translate-x-6</code> thumb</td></tr>
+            <tr><td><code>FileUpload</code></td><td class="wrap">File row: title/subtitle/size/date/icon, optional delete — used for SDS PDF attachments</td></tr>
+            <tr><td><code>SegmentedControl&lt;T&gt;</code></td><td class="wrap">Generic over a string union; active segment gets a blue→purple→pink gradient; optional <code>content: Record&lt;T, ReactNode&gt;</code> panel below</td></tr>
+            <tr><td><code>InlineInput, NumberPicker, ColorPicker, TimePicker, GrowingTextarea, HintText/HintField, ImageSlider, Title family</code></td><td class="wrap"><em>Not directly sampled</em> — follow the shared control shape of their siblings above</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note">Shared idiom for compound pickers: one bordered <code>rounded-lg</code> row split into three zones — label button / text field / solid action button — opening a centered <code>fixed inset-0 bg-black/50</code> modal with Cancel/Select footer.</div>
+
+      <h3>Chip / Status family — <code>components/Chip/</code>, <code>components/Status/</code></h3>
+      <p style="max-width:70ch"><code>Status/colorUtils.ts</code> exposes <code>lighten</code>, <code>darken</code>, <code>withAlpha</code> over <code>#rrggbb</code> hex — the shared machinery behind every tinted status/tenant/date chip. <code>Status.tsx</code> defines the canonical vocabulary:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>code</th><th>title</th><th>color</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>unknown</td><td><span class="swatch" style="background:#BDC1C6"></span><code>#BDC1C6</code></td></tr>
+            <tr><td>1</td><td>identified</td><td><span class="swatch" style="background:#FFB300"></span><code>#FFB300</code></td></tr>
+            <tr><td>2</td><td>similar</td><td><span class="swatch" style="background:#C79869"></span><code>#C79869</code></td></tr>
+            <tr><td>3</td><td>purchased</td><td><span class="swatch" style="background:#3D85D8"></span><code>#3D85D8</code></td></tr>
+            <tr><td>4</td><td>MSDS update</td><td><span class="swatch" style="background:#F9DD04"></span><code>#F9DD04</code></td></tr>
+            <tr><td>5</td><td>in progress</td><td><span class="swatch" style="background:#71BD66"></span><code>#71BD66</code></td></tr>
+            <tr><td>90</td><td>Datarecord</td><td><span class="swatch" style="background:#588157"></span><code>#588157</code></td></tr>
+            <tr><td>91</td><td>release</td><td><span class="swatch" style="background:#00A400"></span><code>#00A400</code></td></tr>
+            <tr><td>92</td><td>is obsolete</td><td><span class="swatch" style="background:#71BD66"></span><code>#71BD66</code></td></tr>
+            <tr><td>98</td><td>attention</td><td><span class="swatch" style="background:#9400D3"></span><code>#9400D3</code></td></tr>
+            <tr><td>99</td><td>sleep</td><td><span class="swatch" style="background:#808080"></span><code>#808080</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="max-width:70ch"><code>Status</code> renders 3 forms via <code>form: 'chip'|'circle'|'dot'</code> — chip (pill, gradient fill if <code>percent</code> given), circle (avatar-style initial), dot (small indicator).</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th class="wrap">Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>StatusChipMuted</code></td><td class="wrap">STATUS_MAP lookup, alpha-tinted bg (<code>withAlpha(bg,'26')</code>) + darkened text</td></tr>
+            <tr><td><code>StatusChipOutline</code></td><td class="wrap">Outlined pill, <code>border: 1.5px solid &lt;bg&gt;</code>, text = bg color</td></tr>
+            <tr><td><code>DueDateChip</code></td><td class="wrap">Days-overdue → severity bucket (<code>today|goodNear|goodFar|past|longPast</code>, 7-day thresholds), own bg/color/border per bucket</td></tr>
+            <tr><td><code>TenantChip</code></td><td class="wrap">Derives <code>never|outdated|upToDate|failed</code> from <code>uploadedAt</code> vs <code>latestAvailableAt</code> + <code>failed</code>; <code>selected</code> adds inset ring</td></tr>
+            <tr><td><code>StatusChipSquare, StatusProgress, DateTag, SdsDateTag, TenantChipCompact, UploadChip</code></td><td class="wrap"><em>Not directly sampled</em> — pattern-consistent with rows above</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="max-width:70ch"><code>Chip</code> (<code>components/Chip/Chip.tsx</code>) is a separate, generic tag component: <code>icon/iconNode, label, value?, count?, description?, size: 'sm'|'lg', active?, onRemove?, onClick?</code>. <code>size="lg"</code> → full-width list-picker row; <code>size="sm"</code> (default) → inline dark pill. Used for package tags, filter chips, and picker-modal rows.</p>
+
+      <h3>Sds field-editing kit — <code>components/Sds/</code></h3>
+      <p style="max-width:70ch">Purpose-built for the SDS detail page's inline <code>editMode</code>: <code>FieldCard</code> (labeled wrapper), <code>EditableValue</code>/<code>EditableTextarea</code>/<code>EditableSelect</code> (text ↔ input swap), <code>ChipListField</code> (generic removable-chip list), <code>CountBadge</code>, <code>TenantsField</code> (renders <code>TenantChip</code>s + add trigger).</p>
+
+      <h3>Tables, modals, toast, nav</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th class="wrap">Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>Table</code></td><td class="wrap">Responsive 3-mode (<code>collapsed|narrow|full</code>) by panel width; row selection, sticky header, Columns modal, empty state, "N of M · K selected" footer</td></tr>
+            <tr><td><code>SortableHeader&lt;T&gt;</code></td><td class="wrap"><code>column, label, sortColumn, sortDirection, onSort</code> — arrow shown only on active column</td></tr>
+            <tr><td><code>Modal</code></td><td class="wrap">Base shell: <code>open, onClose, title, subtitle?, icon?, maxWidth</code>. Centered <code>bg-black/40</code> overlay, rounded-2xl card, icon tile + header + close ✕</td></tr>
+            <tr><td><code>ConfirmModal</code></td><td class="wrap">Wraps <code>Modal</code> + Cancel(secondary)/Confirm(danger) row</td></tr>
+            <tr><td><code>Toast / ToastSimple</code></td><td class="wrap"><code>ToastSimple</code> mounted globally, driven by <code>mgsmu-react</code>'s <code>toastEdit</code> key rather than props</td></tr>
+            <tr><td><code>NavItem / NavDivider / NavFavorites / NavItemModal</code></td><td class="wrap">See §3 — <code>NavItemModal</code> opens a modal instead of navigating (Profile/Settings)</td></tr>
+            <tr><td><code>PanelHeader / NavHeader / DetailHeader</code></td><td class="wrap">Three header presets exported from <code>PanelHeader.tsx</code>; <code>DetailHeader</code> adds an amber-gradient icon tile + tag/status pills + button-row slot</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="data">
+      <h2>5 · Data model</h2>
+      <p>From <code>src/types.ts</code>:</p>
+      <div class="mock-wrap"><pre>interface SdsItem {
+  id: number
+  name: string
+  casNumber: string
+  hazardClass: string
+  status: number          // → STATUS_MAP code
+  manufacturer: string
+  signalWord: string       // 'Danger' | 'Warning' | 'None'
+  storageClass: string
+  quantity: number
+  location: string
+  revisionDate: string
+  packages: string[]
+}
+
+interface SdsPackage {
+  id: number
+  name: string
+  description: string
+}</pre></div>
+      <p>Inferred from <code>pages/Sds.tsx</code>'s use of <code>data/mockSds.ts</code>: a richer <code>SdsRecord</code> (defined locally in the mock file, not in <code>types.ts</code>) extends far past <code>SdsItem</code> — <code>molecularFormula, flashPoint, boilingPoint, density, vaporPressure, solubility, autoIgnitionTemp, phRange, storageTemp, notes, lastUpdated, tenants: TenantRef[]</code>, with <code>TenantRef = { id: number, name: string }</code>.</p>
+      <div class="note">Status codes are one shared vocabulary — the demo <code>Table</code>'s local 4-state (Open/In Progress/Done/Cancelled) is unrelated; don't conflate them. And <code>types.ts</code> currently only holds <code>SdsItem</code>/<code>SdsPackage</code> — the richer shapes live scattered in <code>data/*.ts</code>. When rebuilding, either preserve that split or fold everything into <code>types.ts</code> per the project's own convention.</div>
+    </section>
+
+    <section id="mocks" class="wide">
+      <h2>6 · UI mocks</h2>
+      <p style="max-width:70ch">Rough layout only — not pixel-accurate.</p>
+
+      <h3>A · Shell, default state (e.g. <code>/sds</code>)</h3>
+      <div class="mock-wrap"><pre>┌────────────┬───────────────────────┬──────────────────────────────────────┐
+│ 🔀 Snap-Split│ [🔍 search][📦][⚙] │  🧪  Acetone                    🇩🇪 ✏│
+│            │                       │      CAS 67-64-1 · SDS #12  Updated..│
+│ HAZCHEM    │  ▤ Acetone       ●    │ ┌───────────────┬──────────────────┐│
+│  📄 SDS    │  ▤ Toluene       ●    │ │ CAS Number     │ Hazard Class     ││
+│  📦 Packages│  ▤ Xylene        ●    │ ├───────────────┴──────────────────┤│
+│  🏢 Tenants │  ▤ ...                │ │ Solubility (full width)          ││
+│            │                       │ ├───────────────────────────────────┤│
+│ COMPONENTS │                       │ │ Packages [3]  [chip][chip][chip] ││
+│  🏠 Home   │                       │ ├───────────────────────────────────┤│
+│  📶 Statuses│                      │ │ Tenants  [TenantChip][TenantChip] ││
+│  🔷 Chips  │                       │ ├───────────────────────────────────┤│
+│  📝 Form   │                       │ │ 📄 Acetone_SDS.pdf   1.2MB       ││
+│  🔘 Buttons│                       │ ├───────────────────────────────────┤│
+│  ⛶ Fullview│                       │ │ Hazard / Precautionary / First Aid│
+│            │                       │ └───────────────────────────────────┘│
+│ FAVORITES  │                       │                                      │
+│──────────  │                       │                                      │
+│ 👤 Profile │                       │                                      │
+│ ⚙ Settings │                       │                                      │
+└────────────┴───────────────────────┴──────────────────────────────────────┘
+  Panel 1        Panel 2 (list)              Panel 3 (detail, fill)
+  ~200px         ~200-900px                  fills remainder</pre></div>
+      <p class="mock-caption">Panels: rounded-2xl white/dark cards, <code>gap-4</code>, <code>p-4</code> outer margin, subtle shadow. Panel 1 collapses to a ~40px icon rail. Panel 2's header swaps to a search+filter bar only on <code>/sds</code>.</p>
+
+      <h3>B · Full-bleed page (e.g. <code>/chips /statuses /tenants /packages</code>)</h3>
+      <div class="mock-wrap"><pre>┌────────────┬───────────────────────────────────────────────────────────────┐
+│  (nav,      │  Chip family                              v1 · 2026-07-02   │
+│   same as   │  ──────────────────────────────────────────────────────────  │
+│   above)    │  ● Package · a grouping of SDS documents                     │
+│            │  [📦 Q3 Reagents  12 ✕] [📦 Lab A intake  47 ✕] [...]         │
+│            │                                                                │
+│            │  ● Filter · attribute:value                                   │
+│            │  [⚠ Hazard class: Flammable ✕] [🎯 Status: Expired ✕] [...]   │
+│            │                                                                │
+│            │  ● List view · large, for picker modals                      │
+│            │  ┌──────────────────────────────────────────┐                │
+│            │  │ 📦  Q3 Reagents                    12     │                │
+│            │  │     Reagents restocked for Q1 lab ops     │                │
+│            │  └──────────────────────────────────────────┘                │
+└────────────┴───────────────────────────────────────────────────────────────┘</pre></div>
+      <p class="mock-caption">Nav panel present, middle panel gone, one fill panel holds the whole page — no header chrome, since the page renders its own titles.</p>
+
+      <h3>C · Showcase page pattern (any <code>pages/*.tsx</code>)</h3>
+      <div class="mock-wrap"><pre>Section Header ───────────────────────────  v1 · date
+[Primary] [Secondary] [Danger] [Success] [Warning] [Ghost] [Outline]
+
+Section Header ───────────────────────────  v1 · date
+[Small] [Medium] [Large]</pre></div>
+      <p class="mock-caption">Every showcase page is a <code>space-y-8</code> stack: a <code>SectionHeader</code> (title left, "vN · date" mono text right, bottom border) followed by a <code>flex flex-wrap gap-3</code> row of live component instances. Copy <code>SectionHeader</code> verbatim into any new showcase page.</p>
+
+      <h3>D · Modal shape (any <code>Modal</code>-based dialog)</h3>
+      <div class="mock-wrap"><pre>        ┌───────────────────────────────────┐
+        │ [🖼]  Title                    ✕ │
+        │       Subtitle text               │
+        │ ─────────────────────────────────  │
+        │  (content — form fields, list,     │
+        │   confirmation text, etc.)         │
+        │                                    │
+        │                [Cancel] [Confirm]  │
+        └───────────────────────────────────┘
+  centered, bg-black/40 overlay, rounded-2xl, shadow-2xl</pre></div>
+    </section>
+
+    <section id="checklist" class="wide">
+      <h2>7 · Rebuild checklist</h2>
+      <ol class="checklist">
+        <li><span><strong>Scaffold.</strong> Vite + React + TS; Tailwind v4 via <code>@tailwindcss/vite</code>; <code>@iconify/react</code> + <code>@iconify-json/mdi</code>; <code>flag-icons</code>; <code>react-router-dom</code>; <code>mgsmu-react</code> (or a minimal local equivalent) + <code>react-swipeable</code>.</span></li>
+        <li><span><strong>Global CSS.</strong> <code>src/style/app.css</code> — <code>@import "tailwindcss"</code>, dark custom-variant, thin scrollbar rules, <code>user-select: none</code> with input/textarea override.</span></li>
+        <li><span><strong>Theme + Accent contexts.</strong> <code>ThemeContext</code> (localStorage <code>app-theme</code>, toggles <code>.dark</code>), <code>AccentContext</code> (7-color palette, localStorage <code>app-accent</code>, sets the two CSS vars). Wrap <code>&lt;App&gt;</code> in both.</span></li>
+        <li><span><strong>Types.</strong> Create <code>src/types.ts</code> with <code>SdsItem</code>, <code>SdsPackage</code>, and fold in <code>SdsRecord</code>/<code>TenantRef</code>/upload-state (better centralized than the original's split — see §5).</span></li>
+        <li><span><strong>Primitives first.</strong> All 6 <code>Button</code> components, then <code>FormElements</code> starting with <code>TextInput</code>, <code>DropdownSelect</code>, <code>DatePicker</code>, <code>ToggleSwitch</code>, <code>SegmentedControl</code> — the compound-modal-picker pattern generalizes from there.</span></li>
+        <li><span><strong>Status/Chip system.</strong> <code>colorUtils.ts</code> → <code>Status.tsx</code> (STATUS_MAP + 3 forms) → chip variants (Muted/Outline/Square) → generic <code>Chip</code> → domain chips (TenantChip, DueDateChip, UploadChip, DateTag family).</span></li>
+        <li><span><strong>Shell.</strong> <code>splitview/Panel.tsx</code> (resizable/collapsible primitive) → <code>splitview/Layout.tsx</code> (3-panel composition, route-conditional visibility, global modals/toast mount).</span></li>
+        <li><span><strong>Nav.</strong> <code>NavItem</code>, <code>NavDivider</code>, <code>NavFavorites</code> (+ <code>useFavorites</code>), <code>NavItemModal</code>.</span></li>
+        <li><span><strong>Modals.</strong> <code>Modal</code> base → <code>ConfirmModal</code> → domain modals as pages need them.</span></li>
+        <li><span><strong>Tables.</strong> <code>Table.tsx</code> (responsive/selectable) → <code>SortableHeader</code> → domain tables.</span></li>
+        <li><span><strong>Pages.</strong> Showcase pages (<code>Buttons, Chips, Statuses, Form</code>) via the <code>SectionHeader</code> pattern first — cheapest to verify visually — then domain pages (<code>Sds, Tenants, Packages</code>) composing the Sds field-editing kit.</span></li>
+        <li><span><strong>Wire routing.</strong> <code>App.tsx</code> table inside <code>&lt;Layout&gt;</code>; verify per-route panel-visibility conditions match §3.</span></li>
+        <li><span><strong>Polish pass.</strong> Accent-var consistency (inline style/CSS var, never a Tailwind color class), dark-mode parity on every new component, JS hover handlers on <code>primary</code>-variant buttons.</span></li>
+      </ol>
+    </section>
+
+    <section id="gaps">
+      <h2>Gaps / not directly verified</h2>
+      <ul class="gap-list">
+        <li><strong>Unopened files</strong> — characterized only by name/sibling pattern: <code>InlineInput, NumberPicker, ColorPicker, TimePicker, GrowingTextarea, HintText/HintField, ImageSlider, Title family, ButtonRow, StatusChipSquare, StatusProgress, DateTag, SdsDateTag, TenantChipCompact, UploadChip, SdsTable, TenantsTable, PackagesTable</code>, all Picker modals except <code>Modal</code>/<code>ConfirmModal</code>, <code>Checkbox</code> internals, <code>TagField</code>, <code>QualityTags</code>, most hooks, and 4 of 7 page bodies.</li>
+        <li><strong>No <code>tailwind.config.js</code></strong> — Tailwind v4 is CSS-first, so there's no central token file; the values above are reverse-engineered from literal classes and hex values in components.</li>
+        <li><strong><code>--font-primary</code></strong> is referenced in <code>app.css</code> but never defined anywhere sampled — the actual font family is genuinely unresolved.</li>
+        <li><strong>No test framework or CI</strong> present in the repo.</li>
+        <li><strong><code>react-swipeable</code></strong> is a listed dependency never observed in a sampled component — likely a mobile-nav or table-row-swipe interaction that wasn't opened.</li>
+        <li><strong>Animation durations</strong> transferred faithfully where explicit in Tailwind classes (<code>duration-150/200</code>); the download-button progress fill is confirmed to use <code>requestAnimationFrame</code>, not a CSS transition.</li>
+      </ul>
+    </section>
+  </main>
+</div>

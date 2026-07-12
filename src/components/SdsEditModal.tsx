@@ -11,7 +11,6 @@ interface SdsEditModalProps {
 }
 
 const sections = [
-  { key: 'parse',     label: 'Parse Files',   icon: 'mdi:file-search-outline'   },
   { key: 'status',    label: 'Change Status', icon: 'mdi:tag-outline'          },
   { key: 'mails',     label: 'Send Mails',    icon: 'mdi:email-outline'         },
   { key: 'xls',       label: 'Create XLS',    icon: 'mdi:microsoft-excel'       },
@@ -100,24 +99,6 @@ const SdsEditModal: React.FC<SdsEditModalProps> = ({ open, onClose, selectedCoun
               className="flex h-full transition-transform duration-300 ease-in-out"
               style={{ transform: `translateX(-${active * 100}%)` }}
             >
-
-              {/* Parse Files */}
-              <div className="w-full flex-shrink-0 p-6 overflow-auto">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Parse attached files for {selectedCount} item{selectedCount !== 1 ? 's' : ''}</p>
-                <div className="space-y-3">
-                  <div className="flex flex-col gap-2">
-                    {['Extract hazard data', 'Extract storage conditions', 'Extract first aid info', 'Update fields automatically'].map((opt) => (
-                      <label key={opt} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 dark:border-white/5 cursor-pointer hover:border-gray-200 dark:hover:border-white/10 transition-colors">
-                        <input type="checkbox" defaultChecked className="accent-[var(--accent)]" />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{opt}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <button className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors" style={{ backgroundColor: 'var(--accent)' }}>
-                    Run Parser
-                  </button>
-                </div>
-              </div>
 
               {/* Status */}
               <div className="w-full flex-shrink-0 p-6 overflow-auto">
